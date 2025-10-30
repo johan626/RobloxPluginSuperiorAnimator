@@ -1,4 +1,4 @@
-Main.server.lua
+--Main.server.lua
 
 local PLUGIN_NAME = "SuperiorAnimator"
 local PLUGIN_VERSION = "0.1.0"
@@ -202,17 +202,19 @@ local function createUiElements(parentWidget)
 	end
 
 	local genericPropName, genericPropHolder, genericPropNameLabel = createPropertyDisplay("Property", 2)
-	local genericPropValueX, genericPropValueXHolder = createPropertyDisplay("  - Val", 3)
+	local genericPropValueX, genericPropValueXHolder = createPropertyDisplay("  - X", 3)
+	local genericPropValueY, genericPropValueYHolder = createPropertyDisplay("  - Y", 4)
+	local genericPropValueZ, genericPropValueZHolder = createPropertyDisplay("  - Z", 5)
+
+	local posLabel, posHolder = createPropertyDisplay("Position", 6)
+	local posX, posXHolder = createPropertyDisplay("  - X", 7)
+	local posY, posYHolder = createPropertyDisplay("  - Y", 8)
+	local posZ, posZHolder = createPropertyDisplay("  - Z", 9)
 	
-	local posLabel, posHolder = createPropertyDisplay("Position", 4)
-	local posX, posXHolder = createPropertyDisplay("  - X", 5)
-	local posY, posYHolder = createPropertyDisplay("  - Y", 6)
-	local posZ, posZHolder = createPropertyDisplay("  - Z", 7)
-	
-	local rotLabel, rotHolder = createPropertyDisplay("Rotation", 8)
-	local rotX, rotXHolder = createPropertyDisplay("  - X", 9)
-	local rotY, rotYHolder = createPropertyDisplay("  - Y", 10)
-	local rotZ, rotZHolder = createPropertyDisplay("  - Z", 11)
+	local rotLabel, rotHolder = createPropertyDisplay("Rotation", 10)
+	local rotX, rotXHolder = createPropertyDisplay("  - X", 11)
+	local rotY, rotYHolder = createPropertyDisplay("  - Y", 12)
+	local rotZ, rotZHolder = createPropertyDisplay("  - Z", 13)
 	
 	local easingButton = Instance.new("TextButton")
 	easingButton.Name = "EasingButton"
@@ -223,9 +225,26 @@ local function createUiElements(parentWidget)
 	easingButton.Font = Enum.Font.SourceSans
 	easingButton.TextSize = 14
 	easingButton.Text = "Easing: Linear"
-	easingButton.LayoutOrder = 12
+	easingButton.LayoutOrder = 14
 	easingButton.Visible = false
 	easingButton.Parent = propertiesFrame
+	
+	local easingMenu = Instance.new("ScrollingFrame")
+	easingMenu.Name = "EasingMenu"
+	easingMenu.Visible = false
+	easingMenu.Size = UDim2.new(1, -10, 0, 150)
+	easingMenu.Position = UDim2.new(0, 5, 0, 0) -- Akan disesuaikan saat ditampilkan
+	easingMenu.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+	easingMenu.BorderColor3 = Color3.fromRGB(90, 90, 90)
+	easingMenu.ScrollBarThickness = 5
+	easingMenu.LayoutOrder = 15 -- Setelah tombol easing
+	easingMenu.ZIndex = 11
+	easingMenu.Parent = propertiesFrame
+	
+	local easingMenuLayout = Instance.new("UIListLayout")
+	easingMenuLayout.Padding = UDim.new(0, 2)
+	easingMenuLayout.SortOrder = Enum.SortOrder.Name
+	easingMenuLayout.Parent = easingMenu
 	
 	-- TIMELINE --
 	local timelineContainer = Instance.new("Frame")
@@ -420,6 +439,7 @@ local function createUiElements(parentWidget)
 
 
 	return {
+		mainFrame = mainFrame,
 		selectedObjectLabel = selectedObjectLabel,
 		saveButton = saveButton,
 		loadButton = loadButton,
@@ -429,6 +449,7 @@ local function createUiElements(parentWidget)
 		addObjectButton = addObjectButton,
 		addKeyframeButton = addKeyframeButton,
 		easingButton = easingButton,
+		easingMenu = easingMenu,
 		trackListFrame = trackListFrame,
 		keyframeAreaFrame = keyframeAreaFrame,
 		keyframeTracksContainer = keyframeTracksContainer,
@@ -466,6 +487,8 @@ local function createUiElements(parentWidget)
 				nameLabel = genericPropNameLabel,
 				name = genericPropName,
 				x = genericPropValueX, xHolder = genericPropValueXHolder,
+				y = genericPropValueY, yHolder = genericPropValueYHolder,
+				z = genericPropValueZ, zHolder = genericPropValueZHolder,
 			}
 		}
 	}
@@ -494,10 +517,115 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local EasingFunctions = {
 	Linear = function(t) return t end,
-	EaseIn = function(t) return t * t end,
-	EaseOut = function(t) return 1 - (1 - t) * (1 - t) end,
+
+	-- Sine
+	InSine = function(t) return 1 - math.cos((t * math.pi) / 2) end,
+	OutSine = function(t) return math.sin((t * math.pi) / 2) end,
+	InOutSine = function(t) return -(math.cos(math.pi * t) - 1) / 2 end,
+
+	-- Quad
+	InQuad = function(t) return t * t end,
+	OutQuad = function(t) return 1 - (1 - t) * (1 - t) end,
+	InOutQuad = function(t)
+		if t < 0.5 then return 2 * t * t
+		else return 1 - math.pow(-2 * t + 2, 2) / 2 end
+	end,
+
+	-- Cubic
+	InCubic = function(t) return t * t * t end,
+	OutCubic = function(t) return 1 - math.pow(1 - t, 3) end,
+	InOutCubic = function(t)
+		if t < 0.5 then return 4 * t * t * t
+		else return 1 - math.pow(-2 * t + 2, 3) / 2 end
+	end,
+
+	-- Quart
+	InQuart = function(t) return t * t * t * t end,
+	OutQuart = function(t) return 1 - math.pow(1 - t, 4) end,
+	InOutQuart = function(t)
+		if t < 0.5 then return 8 * t * t * t * t
+		else return 1 - math.pow(-2 * t + 2, 4) / 2 end
+	end,
+
+	-- Quint
+	InQuint = function(t) return t * t * t * t * t end,
+	OutQuint = function(t) return 1 - math.pow(1 - t, 5) end,
+	InOutQuint = function(t)
+		if t < 0.5 then return 16 * t * t * t * t * t
+		else return 1 - math.pow(-2 * t + 2, 5) / 2 end
+	end,
+
+	-- Expo
+	InExpo = function(t) if t == 0 then return 0 else return math.pow(2, 10 * t - 10) end end,
+	OutExpo = function(t) if t == 1 then return 1 else return 1 - math.pow(2, -10 * t) end end,
+	InOutExpo = function(t)
+		if t == 0 then return 0
+		elseif t == 1 then return 1
+		elseif t < 0.5 then return math.pow(2, 20 * t - 10) / 2
+		else return (2 - math.pow(2, -20 * t + 10)) / 2 end
+	end,
+
+	-- Circ
+	InCirc = function(t) return 1 - math.sqrt(1 - math.pow(t, 2)) end,
+	OutCirc = function(t) return math.sqrt(1 - math.pow(t - 1, 2)) end,
+	InOutCirc = function(t)
+		if t < 0.5 then return (1 - math.sqrt(1 - math.pow(2 * t, 2))) / 2
+		else return (math.sqrt(1 - math.pow(-2 * t + 2, 2)) + 1) / 2 end
+	end,
+
+	-- Back
+	InBack = function(t) local c1=1.70158; local c3=c1+1; return c3*t*t*t-c1*t*t end,
+	OutBack = function(t) local c1=1.70158; local c3=c1+1; return 1+c3*math.pow(t-1,3)+c1*math.pow(t-1,2) end,
+	InOutBack = function(t)
+		local c1=1.70158; local c2=c1*1.525;
+		if t < 0.5 then return (math.pow(2*t,2)*((c2+1)*2*t-c2))/2
+		else return (math.pow(2*t-2,2)*((c2+1)*(t*2-2)+c2)+2)/2 end
+	end,
+
+	-- Elastic
+	InElastic = function(t)
+		local c4=(2*math.pi)/3; if t==0 then return 0 elseif t==1 then return 1 end
+		return -math.pow(2,10*t-10)*math.sin((t*10-10.75)*c4)
+	end,
+	OutElastic = function(t)
+		local c4=(2*math.pi)/3; if t==0 then return 0 elseif t==1 then return 1 end
+		return math.pow(2,-10*t)*math.sin((t*10-0.75)*c4)+1
+	end,
+	InOutElastic = function(t)
+		local c5=(2*math.pi)/4.5; if t==0 then return 0 elseif t==1 then return 1 end
+		if t < 0.5 then return -(math.pow(2,20*t-10)*math.sin((20*t-11.125)*c5))/2
+		else return (math.pow(2,-20*t+10)*math.sin((20*t-11.125)*c5))/2+1 end
+	end,
+
+	-- Bounce
+	OutBounce = function(t)
+		local n1=7.5625; local d1=2.75;
+		if t < 1/d1 then return n1*t*t
+		elseif t < 2/d1 then local t2=t-(1.5/d1); return n1*t2*t2+0.75
+		elseif t < 2.5/d1 then local t2=t-(2.25/d1); return n1*t2*t2+0.9375
+		else local t2=t-(2.625/d1); return n1*t2*t2+0.984375 end
+	end,
+	InBounce = function(t) return 1 - EasingFunctions.OutBounce(1-t) end,
+	InOutBounce = function(t)
+		if t < 0.5 then return (1-EasingFunctions.OutBounce(1-2*t))/2
+		else return (1+EasingFunctions.OutBounce(2*t-1))/2 end
+	end
 }
-local easingStyles = {"Linear", "EaseIn", "EaseOut"}
+
+-- Diurutkan berdasarkan kategori untuk dropdown nanti
+local easingStyles = {
+	"Linear",
+	"InSine", "OutSine", "InOutSine",
+	"InQuad", "OutQuad", "InOutQuad",
+	"InCubic", "OutCubic", "InOutCubic",
+	"InQuart", "OutQuart", "InOutQuart",
+	"InQuint", "OutQuint", "InOutQuint",
+	"InExpo", "OutExpo", "InOutExpo",
+	"InCirc", "OutCirc", "InOutCirc",
+	"InBack", "OutBack", "InOutBack",
+	"InElastic", "OutElastic", "InOutElastic",
+	"InBounce", "OutBounce", "InOutBounce",
+}
 local animatableProperties = {"Transparency", "Size"}
 
 local animationData = {} 
@@ -521,6 +649,111 @@ local updateCanvasSize
 local clearTimeline
 local createTrackForObject
 local createKeyframeMarker
+local deleteTrack
+local updateKeyframeValue
+
+function updateKeyframeValue(newValue, componentType, axis)
+	local kfInfo = currentlySelectedKeyframe
+	if not kfInfo.object or kfInfo.frame == -1 then return end
+
+	local val = tonumber(newValue)
+	if not val then return end -- Input tidak valid
+
+	local propData = animationData[kfInfo.object].Properties[kfInfo.property]
+	if not propData then return end
+	
+	local keyframe = propData.keyframes[kfInfo.frame]
+	if not keyframe then return end
+
+	local updated = false
+	if kfInfo.property == "CFrame" then
+		local oldCFrame = keyframe.Value
+		local newPos = oldCFrame.Position
+		local newRot = Vector3.new(oldCFrame:ToEulerAnglesYXZ())
+
+		if componentType == "Position" then
+			newPos = Vector3.new(
+				axis == "X" and val or newPos.X,
+				axis == "Y" and val or newPos.Y,
+				axis == "Z" and val or newPos.Z
+			)
+			updated = true
+		elseif componentType == "Rotation" then
+			newRot = Vector3.new(
+				axis == "X" and math.rad(val) or newRot.X,
+				axis == "Y" and math.rad(val) or newRot.Y,
+				axis == "Z" and math.rad(val) or newRot.Z
+			)
+			updated = true
+		end
+		
+		if updated then
+			keyframe.Value = CFrame.new(newPos) * CFrame.fromEulerAnglesYXZ(newRot.Y, newRot.X, newRot.Z)
+		end
+		
+	elseif typeof(keyframe.Value) == "number" and axis == "X" then
+		keyframe.Value = val
+		updated = true
+	elseif typeof(keyframe.Value) == "Vector3" then
+		local oldVec = keyframe.Value
+		keyframe.Value = Vector3.new(
+			axis == "X" and val or oldVec.X,
+			axis == "Y" and val or oldVec.Y,
+			axis == "Z" and val or oldVec.Z
+		)
+		updated = true
+	end
+
+	if updated then
+		updateAnimationFromPlayhead()
+	end
+end
+
+function deleteTrack(object, propName)
+	local objectData = animationData[object]
+	if not objectData then return end
+
+	-- Jika propName tidak ada, berarti kita menghapus seluruh objek
+	if not propName then
+		-- Hapus semua sub-track terlebih dahulu
+		for name, _ in pairs(objectData.Properties) do
+			if name ~= "CFrame" then
+				deleteTrack(object, name) -- Panggil rekursif untuk sub-track
+			end
+		end
+
+		-- Hapus track utama CFrame
+		objectData.trackFrame:Destroy()
+		objectData.keyframeContainer:Destroy()
+		
+		-- Hapus data objek
+		animationData[object] = nil
+		
+		if currentlySelectedTrack.object == object then
+			currentlySelectedTrack = { object = nil, property = nil, label = nil }
+		end
+
+	-- Jika ada propName, kita hanya menghapus sub-track properti
+	else
+		if objectData.Properties[propName] and propName ~= "CFrame" then
+			objectData.Properties[propName] = nil
+			
+			local subTrackUi = objectData.subTrackFrames[propName]
+			if subTrackUi then
+				subTrackUi.label:Destroy()
+				subTrackUi.keyframes:Destroy()
+				objectData.subTrackFrames[propName] = nil
+			end
+
+			if currentlySelectedTrack.object == object and currentlySelectedTrack.property == propName then
+				currentlySelectedTrack = { object = nil, property = nil, label = nil }
+			end
+		end
+	end
+	
+	-- Perbarui UI setelah penghapusan
+	updateCanvasSize()
+end
 
 function lerp(a, b, alpha)
 	local dataType = typeof(a)
@@ -577,7 +810,6 @@ function createTrackForObject(object, isSubTrack, propName)
 	trackLabelHolder.Parent = ui.trackListFrame
 
 	local trackLabel = Instance.new("TextLabel")
-	trackLabel.Size = UDim2.new(1, -30, 1, 0)
 	trackLabel.Position = UDim2.new(0, isSubTrack and 15 or 5, 0, 0)
 	trackLabel.Text = propName or object.Name
 	trackLabel.Font = Enum.Font.SourceSans
@@ -587,10 +819,28 @@ function createTrackForObject(object, isSubTrack, propName)
 	trackLabel.TextXAlignment = Enum.TextXAlignment.Left
 	trackLabel.Parent = trackLabelHolder
 	
+	local deleteTrackButton = Instance.new("TextButton")
+	deleteTrackButton.Name = "DeleteTrackButton"
+	deleteTrackButton.Size = UDim2.new(0, 20, 0, 20)
+	deleteTrackButton.Position = UDim2.new(1, -25, 0.5, -10)
+	deleteTrackButton.Text = "X"
+	deleteTrackButton.Font = Enum.Font.SourceSansBold
+	deleteTrackButton.TextSize = 14
+	deleteTrackButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+	deleteTrackButton.BackgroundColor3 = Color3.fromRGB(80, 50, 50)
+	deleteTrackButton.Parent = trackLabelHolder
+
+	deleteTrackButton.MouseButton1Click:Connect(function()
+		-- Jika ini sub-track, berikan nama propertinya. Jika tidak, kirim nil untuk menghapus seluruh objek.
+		deleteTrack(object, isSubTrack and propName or nil)
+	end)
+
 	if not isSubTrack then
+		trackLabel.Size = UDim2.new(1, -55, 1, 0) -- Space for add and delete buttons
+		
 		local addPropButton = Instance.new("TextButton")
 		addPropButton.Size = UDim2.new(0, 20, 0, 20)
-		addPropButton.Position = UDim2.new(1, -25, 0.5, -10)
+		addPropButton.Position = UDim2.new(1, -50, 0.5, -10) -- To the left of delete button
 		addPropButton.Text = "+"
 		addPropButton.Font = Enum.Font.SourceSansBold
 		addPropButton.TextSize = 16
@@ -601,6 +851,8 @@ function createTrackForObject(object, isSubTrack, propName)
 			ui.propMenu.frame.Position = UDim2.new(0, addPropButton.AbsolutePosition.X - 150, 0, addPropButton.AbsolutePosition.Y + 25)
 			ui.propMenu.frame.Visible = true
 		end)
+	else
+		trackLabel.Size = UDim2.new(1, -30, 1, 0) -- Space for just delete button
 	end
 	
 	local keyframeTrack = Instance.new("Frame")
@@ -686,7 +938,7 @@ function updateCanvasSize()
 	end
 	
 	ui.trackListFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-	ui.keyframeAreaFrame.CanvasSize = UDim2.new(0, ui.timelineRuler.AbsoluteSize.X.Offset, 0, totalHeight)
+	ui.keyframeAreaFrame.CanvasSize = UDim2.new(0, ui.timelineRuler.AbsoluteSize.X, 0, totalHeight)
 end
 
 function updatePropertyDisplay(keyframeData, propName)
@@ -1020,13 +1272,33 @@ ui.exportButton.MouseButton1Click:Connect(function()
 		keyframeSequence.Parent = animation
 
 		local function convertEasing(easingName)
-			if easingName == "EaseIn" then
-				return Enum.EasingStyle.Quad, Enum.EasingDirection.In
-			elseif easingName == "EaseOut" then
-				return Enum.EasingStyle.Quad, Enum.EasingDirection.Out
-			else -- Default to Linear
-				return Enum.EasingStyle.Linear, Enum.EasingDirection.InOut
+			local name = easingName or "Linear"
+			
+			-- Ekstrak Style dan Direction dari nama
+			local style, direction = "Linear", "InOut"
+			if name:find("InOut") then
+				direction = "InOut"
+				style = name:gsub("InOut", "")
+			elseif name:find("In") then
+				direction = "In"
+				style = name:gsub("In", "")
+			elseif name:find("Out") then
+				direction = "Out"
+				style = name:gsub("Out", "")
 			end
+			
+			if style == "Ease" then style = "Quad" end -- Konversi nama lama
+
+			-- Petakan nama string ke Enum
+			local easingStyleEnum = Enum.EasingStyle[style] or Enum.EasingStyle.Linear
+			local easingDirectionEnum = Enum.EasingDirection[direction] or Enum.EasingDirection.InOut
+			
+			-- Roblox tidak memiliki OutIn, jadi kita default ke InOut
+			if direction == "OutIn" then
+				easingDirectionEnum = Enum.EasingDirection.InOut
+			end
+
+			return easingStyleEnum, easingDirectionEnum
 		end
 
 		-- 1. Kumpulkan semua frame unik dari CFrame tracks
@@ -1240,20 +1512,64 @@ ui.stopButton.MouseButton1Click:Connect(function()
 end)
 
 ui.easingButton.MouseButton1Click:Connect(function()
-	local kfInfo = currentlySelectedKeyframe
-	if not kfInfo.object or kfInfo.frame == -1 or not kfInfo.property then return end
+	local currentPos = ui.easingButton.AbsolutePosition
+	local menuPos = UDim2.new(0, 5, 0, ui.easingButton.LayoutOrder * 30) -- Perkiraan posisi
+	ui.easingMenu.Position = menuPos
+	-- Reposition menu to be directly below the button
+	local buttonPos = ui.easingButton.AbsolutePosition
+	local propsPos = ui.propertyLabels.cframe.posHolder.Parent.AbsolutePosition
+	local finalPos = UDim2.new(0, 5, 0, buttonPos.Y - propsPos.Y + ui.easingButton.AbsoluteSize.Y)
 	
-	local propTrack = animationData[kfInfo.object].Properties[kfInfo.property]
-	if not propTrack or not propTrack.keyframes[kfInfo.frame] then return end
-	
-	local currentEasing = propTrack.keyframes[kfInfo.frame].Easing
-	local currentIndex = table.find(easingStyles, currentEasing) or 1
-	local nextIndex = (currentIndex % #easingStyles) + 1
-	local newEasing = easingStyles[nextIndex]
-
-	propTrack.keyframes[kfInfo.frame].Easing = newEasing
-	ui.easingButton.Text = "Easing: " .. newEasing
+	ui.easingMenu.Position = finalPos
+	ui.easingMenu.Visible = not ui.easingMenu.Visible
 end)
+
+-- Sembunyikan menu jika diklik di luar
+ui.mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if ui.easingMenu.Visible then
+			-- Cek apakah klik berada di dalam menu atau tombol easing
+			local mousePos = input.Position
+			local menuRect = Rect.new(ui.easingMenu.AbsolutePosition, ui.easingMenu.AbsoluteSize)
+			local buttonRect = Rect.new(ui.easingButton.AbsolutePosition, ui.easingButton.AbsoluteSize)
+			
+			if not (mousePos.X >= menuRect.Min.X and mousePos.X <= menuRect.Max.X and mousePos.Y >= menuRect.Min.Y and mousePos.Y <= menuRect.Max.Y) and
+			   not (mousePos.X >= buttonRect.Min.X and mousePos.X <= buttonRect.Max.X and mousePos.Y >= buttonRect.Min.Y and mousePos.Y <= buttonRect.Max.Y)
+			then
+				ui.easingMenu.Visible = false
+			end
+		end
+		
+		if ui.propMenu.frame.Visible then
+			ui.propMenu.frame.Visible = false
+		end
+	end
+end)
+
+-- Isi menu dropdown easing
+for _, styleName in ipairs(easingStyles) do
+	local itemButton = Instance.new("TextButton")
+	itemButton.Name = styleName
+	itemButton.Text = styleName
+	itemButton.Size = UDim2.new(1, 0, 0, 24)
+	itemButton.BackgroundColor3 = Color3.fromRGB(70,70,70)
+	itemButton.TextColor3 = Color3.fromRGB(220,220,220)
+	itemButton.Font = Enum.Font.SourceSans
+	itemButton.TextSize = 14
+	itemButton.Parent = ui.easingMenu
+
+	itemButton.MouseButton1Click:Connect(function()
+		local kfInfo = currentlySelectedKeyframe
+		if not kfInfo.object or kfInfo.frame == -1 then return end
+		
+		local propTrack = animationData[kfInfo.object].Properties[kfInfo.property]
+		if propTrack and propTrack.keyframes[kfInfo.frame] then
+			propTrack.keyframes[kfInfo.frame].Easing = styleName
+			ui.easingButton.Text = "Easing: " .. styleName
+			ui.easingMenu.Visible = false
+		end
+	end)
+end
 
 inputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then return end
@@ -1297,3 +1613,25 @@ end
 
 updateSelectedObjectLabel()
 updateCanvasSize()
+
+-- Hubungkan event untuk pengeditan properti
+local function connectPropEdit(textbox, component, axis)
+	textbox.FocusLost:Connect(function(enterPressed)
+		if enterPressed then
+			updateKeyframeValue(textbox.Text, component, axis)
+		end
+	end)
+end
+
+-- CFrame
+connectPropEdit(ui.propertyLabels.cframe.posX, "Position", "X")
+connectPropEdit(ui.propertyLabels.cframe.posY, "Position", "Y")
+connectPropEdit(ui.propertyLabels.cframe.posZ, "Position", "Z")
+connectPropEdit(ui.propertyLabels.cframe.rotX, "Rotation", "X")
+connectPropEdit(ui.propertyLabels.cframe.rotY, "Rotation", "Y")
+connectPropEdit(ui.propertyLabels.cframe.rotZ, "Rotation", "Z")
+
+-- Generic
+connectPropEdit(ui.propertyLabels.generic.x, nil, "X")
+connectPropEdit(ui.propertyLabels.generic.y, nil, "Y")
+connectPropEdit(ui.propertyLabels.generic.z, nil, "Z")

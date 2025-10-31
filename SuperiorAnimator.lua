@@ -22,26 +22,26 @@ local Config = {
 		DialogBackground = Color3.fromRGB(50, 50, 50),
 		DialogHeader = Color3.fromRGB(40, 40, 40),
 		InputBackground = Color3.fromRGB(50, 50, 50),
-		
+
 		-- Teks
 		TextPrimary = Color3.fromRGB(255, 255, 255),
 		TextSecondary = Color3.fromRGB(220, 220, 220),
 		TextMuted = Color3.fromRGB(200, 200, 200),
 		TextDisabled = Color3.fromRGB(180, 180, 180),
-		
+
 		-- Tombol
 		ButtonPrimary = Color3.fromRGB(70, 90, 120),
 		ButtonSecondary = Color3.fromRGB(80, 80, 80),
 		ButtonDanger = Color3.fromRGB(120, 70, 70),
 		ButtonDelete = Color3.fromRGB(80, 50, 50),
-		
+
 		-- Timeline
 		Playhead = Color3.fromRGB(255, 80, 80),
 		KeyframeLinear = Color3.fromRGB(255, 255, 0),
 		KeyframeEased = Color3.fromRGB(0, 255, 127),
 		KeyframeSelected = Color3.fromRGB(0, 170, 255),
 		TrackSelected = Color3.fromRGB(80, 80, 100),
-		
+
 		-- Lain-lain
 		Border = Color3.fromRGB(80, 80, 80),
 		Separator = Color3.fromRGB(60, 60, 60),
@@ -66,14 +66,14 @@ local function createUiElements(parentWidget)
 	topBarFrame.BackgroundColor3 = Config.Colors.TopBarBackground
 	topBarFrame.BorderSizePixel = 0
 	topBarFrame.Parent = mainFrame
-	
+
 	local topBarLayout = Instance.new("UIListLayout")
 	topBarLayout.FillDirection = Enum.FillDirection.Horizontal
 	topBarLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	topBarLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 	topBarLayout.Padding = UDim.new(0, 5)
 	topBarLayout.Parent = topBarFrame
-	
+
 	local saveButton = Instance.new("TextButton")
 	saveButton.Name = "SaveButton"
 	saveButton.Size = UDim2.new(0, 50, 0, 28)
@@ -84,7 +84,7 @@ local function createUiElements(parentWidget)
 	saveButton.TextSize = 14
 	saveButton.LayoutOrder = 1
 	saveButton.Parent = topBarFrame
-	
+
 	local loadButton = Instance.new("TextButton")
 	loadButton.Name = "LoadButton"
 	loadButton.Size = UDim2.new(0, 50, 0, 28)
@@ -112,7 +112,7 @@ local function createUiElements(parentWidget)
 	separator1.BackgroundColor3 = Config.Colors.Separator
 	separator1.LayoutOrder = 4
 	separator1.Parent = topBarFrame
-	
+
 	local playButton = Instance.new("TextButton")
 	playButton.Name = "PlayButton"
 	playButton.Size = UDim2.new(0, 50, 0, 28)
@@ -123,7 +123,7 @@ local function createUiElements(parentWidget)
 	playButton.TextSize = 14
 	playButton.LayoutOrder = 5
 	playButton.Parent = topBarFrame
-	
+
 	local stopButton = Instance.new("TextButton")
 	stopButton.Name = "StopButton"
 	stopButton.Size = UDim2.new(0, 50, 0, 28)
@@ -134,7 +134,7 @@ local function createUiElements(parentWidget)
 	stopButton.TextSize = 14
 	stopButton.LayoutOrder = 6
 	stopButton.Parent = topBarFrame
-	
+
 	local loopButton = Instance.new("TextButton")
 	loopButton.Name = "LoopButton"
 	loopButton.Size = UDim2.new(0, 28, 0, 28)
@@ -151,7 +151,7 @@ local function createUiElements(parentWidget)
 	separator2.BackgroundColor3 = Config.Colors.Separator
 	separator2.LayoutOrder = 8
 	separator2.Parent = topBarFrame
-	
+
 	local addObjectButton = Instance.new("TextButton")
 	addObjectButton.Name = "AddObjectButton"
 	addObjectButton.Size = UDim2.new(0, 100, 0, 28)
@@ -162,7 +162,7 @@ local function createUiElements(parentWidget)
 	addObjectButton.TextSize = 14
 	addObjectButton.LayoutOrder = 9
 	addObjectButton.Parent = topBarFrame
-	
+
 	local addKeyframeButton = Instance.new("TextButton")
 	addKeyframeButton.Name = "AddKeyframeButton"
 	addKeyframeButton.Size = UDim2.new(0, 28, 0, 28)
@@ -173,7 +173,7 @@ local function createUiElements(parentWidget)
 	addKeyframeButton.TextColor3 = Config.Colors.TextPrimary
 	addKeyframeButton.LayoutOrder = 10
 	addKeyframeButton.Parent = topBarFrame
-	
+
 	local autoKeyButton = Instance.new("TextButton")
 	autoKeyButton.Name = "AutoKeyButton"
 	autoKeyButton.Size = UDim2.new(0, 50, 0, 28)
@@ -184,7 +184,7 @@ local function createUiElements(parentWidget)
 	autoKeyButton.TextSize = 14
 	autoKeyButton.LayoutOrder = 11
 	autoKeyButton.Parent = topBarFrame
-	
+
 	local separator3 = Instance.new("Frame")
 	separator3.Size = UDim2.new(0, 1, 0, 28)
 	separator3.BackgroundColor3 = Config.Colors.Separator
@@ -220,7 +220,7 @@ local function createUiElements(parentWidget)
 	propertiesFrame.BackgroundColor3 = Config.Colors.PropertiesBackground
 	propertiesFrame.BorderSizePixel = 0
 	propertiesFrame.Parent = contentFrame
-	
+
 	local propertyLayout = Instance.new("UIListLayout")
 	propertyLayout.Padding = UDim.new(0, 5)
 	propertyLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -270,7 +270,7 @@ local function createUiElements(parentWidget)
 		valueBox.BackgroundColor3 = Config.Colors.InputBackground
 		valueBox.TextXAlignment = Enum.TextXAlignment.Right
 		valueBox.Parent = holder
-		
+
 		return valueBox, holder, nameLabel
 	end
 
@@ -283,7 +283,7 @@ local function createUiElements(parentWidget)
 	local posX, posXHolder = createPropertyDisplay("  - X", 7)
 	local posY, posYHolder = createPropertyDisplay("  - Y", 8)
 	local posZ, posZHolder = createPropertyDisplay("  - Z", 9)
-	
+
 	local rotLabel, rotHolder = createPropertyDisplay("Rotation", 10)
 	local rotX, rotXHolder = createPropertyDisplay("  - X", 11)
 	local rotY, rotYHolder = createPropertyDisplay("  - Y", 12)
@@ -355,7 +355,7 @@ local function createUiElements(parentWidget)
 	boolCheckbox.TextColor3 = Config.Colors.TextPrimary
 	boolCheckbox.BackgroundColor3 = Config.Colors.InputBackground
 	boolCheckbox.Parent = boolHolder
-	
+
 	local easingButton = Instance.new("TextButton")
 	easingButton.Name = "EasingButton"
 	easingButton.Size = UDim2.new(1, -10, 0, 24)
@@ -368,7 +368,7 @@ local function createUiElements(parentWidget)
 	easingButton.LayoutOrder = 24
 	easingButton.Visible = false
 	easingButton.Parent = propertiesFrame
-	
+
 	local easingMenu = Instance.new("ScrollingFrame")
 	easingMenu.Name = "EasingMenu"
 	easingMenu.Visible = false
@@ -407,12 +407,12 @@ local function createUiElements(parentWidget)
 	placeholderLabel.LayoutOrder = 27
 	placeholderLabel.Visible = true -- Tampil secara default
 	placeholderLabel.Parent = propertiesFrame
-	
+
 	local easingMenuLayout = Instance.new("UIListLayout")
 	easingMenuLayout.Padding = UDim.new(0, 2)
 	easingMenuLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	easingMenuLayout.Parent = easingMenu
-	
+
 	-- TIMELINE --
 	local timelineContainer = Instance.new("Frame")
 	timelineContainer.Name = "TimelineContainer"
@@ -430,7 +430,7 @@ local function createUiElements(parentWidget)
 	trackListFrame.BorderSizePixel = 0
 	trackListFrame.ScrollBarThickness = 6
 	trackListFrame.Parent = timelineContainer
-	
+
 	local trackListLayout = Instance.new("UIListLayout")
 	trackListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	trackListLayout.Parent = trackListFrame
@@ -474,7 +474,7 @@ local function createUiElements(parentWidget)
 		marker.BackgroundColor3 = Config.Colors.Separator
 		marker.BorderSizePixel = 0
 		marker.Parent = timelineRuler
-		
+
 		local frameLabel = Instance.new("TextLabel")
 		frameLabel.Size = UDim2.new(0, 50, 0, 12)
 		frameLabel.Position = UDim2.new(0, 3, 0, 0)
@@ -485,7 +485,7 @@ local function createUiElements(parentWidget)
 		frameLabel.BackgroundTransparency = 1
 		frameLabel.TextXAlignment = Enum.TextXAlignment.Left
 		frameLabel.Parent = marker
-		
+
 		-- Hanya tampilkan label waktu pada interval yang signifikan
 		if i % 2 == 0 and i > 0 then
 			local timeLabel = Instance.new("TextLabel")
@@ -529,7 +529,7 @@ local function createUiElements(parentWidget)
 	startHandle.Text = ""
 	startHandle.ZIndex = 4
 	startHandle.Parent = timelineRuler
-	
+
 	local endHandle = Instance.new("TextButton")
 	endHandle.Name = "EndHandle"
 	endHandle.Size = UDim2.new(0, 8, 1, 0)
@@ -546,7 +546,7 @@ local function createUiElements(parentWidget)
 	saveDialogGui.Enabled = false
 	saveDialogGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	saveDialogGui.Parent = parentWidget
-	
+
 	local saveDialogFrame = Instance.new("Frame")
 	saveDialogFrame.Name = "SaveDialogFrame"
 	saveDialogFrame.Size = UDim2.new(0, 300, 0, 150)
@@ -564,7 +564,7 @@ local function createUiElements(parentWidget)
 	saveTitle.TextColor3 = Config.Colors.TextPrimary
 	saveTitle.BackgroundColor3 = Config.Colors.DialogHeader
 	saveTitle.Parent = saveDialogFrame
-	
+
 	local animNameBox = Instance.new("TextBox")
 	animNameBox.Name = "AnimNameBox"
 	animNameBox.Size = UDim2.new(1, -20, 0, 30)
@@ -573,7 +573,7 @@ local function createUiElements(parentWidget)
 	animNameBox.Font = Enum.Font.SourceSans
 	animNameBox.TextSize = 14
 	animNameBox.Parent = saveDialogFrame
-	
+
 	local confirmSaveButton = Instance.new("TextButton")
 	confirmSaveButton.Name = "ConfirmSaveButton"
 	confirmSaveButton.Size = UDim2.new(0.5, -15, 0, 30)
@@ -583,7 +583,7 @@ local function createUiElements(parentWidget)
 	confirmSaveButton.TextColor3 = Config.Colors.TextPrimary
 	confirmSaveButton.Font = Enum.Font.SourceSansBold
 	confirmSaveButton.Parent = saveDialogFrame
-	
+
 	local cancelSaveButton = Instance.new("TextButton")
 	cancelSaveButton.Name = "CancelSaveButton"
 	cancelSaveButton.Size = UDim2.new(0.5, -15, 0, 30)
@@ -593,14 +593,14 @@ local function createUiElements(parentWidget)
 	cancelSaveButton.TextColor3 = Config.Colors.TextPrimary
 	cancelSaveButton.Font = Enum.Font.SourceSansBold
 	cancelSaveButton.Parent = saveDialogFrame
-	
+
 	-- LOAD DIALOG --
 	local loadDialogGui = Instance.new("ScreenGui")
 	loadDialogGui.Name = "LoadDialogGui"
 	loadDialogGui.Enabled = false
 	loadDialogGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	loadDialogGui.Parent = parentWidget
-	
+
 	local loadDialogFrame = Instance.new("Frame")
 	loadDialogFrame.Name = "LoadDialogFrame"
 	loadDialogFrame.Size = UDim2.new(0, 350, 0, 400)
@@ -609,7 +609,7 @@ local function createUiElements(parentWidget)
 	loadDialogFrame.BackgroundColor3 = Config.Colors.DialogBackground
 	loadDialogFrame.BorderColor3 = Config.Colors.Border
 	loadDialogFrame.Parent = loadDialogGui
-	
+
 	local loadTitle = Instance.new("TextLabel")
 	loadTitle.Size = UDim2.new(1, 0, 0, 30)
 	loadTitle.Text = "Muat Animasi"
@@ -618,7 +618,7 @@ local function createUiElements(parentWidget)
 	loadTitle.TextColor3 = Config.Colors.TextPrimary
 	loadTitle.BackgroundColor3 = Config.Colors.DialogHeader
 	loadTitle.Parent = loadDialogFrame
-	
+
 	local savedAnimsList = Instance.new("ScrollingFrame")
 	savedAnimsList.Name = "SavedAnimsList"
 	savedAnimsList.Size = UDim2.new(1, -20, 1, -80)
@@ -627,11 +627,11 @@ local function createUiElements(parentWidget)
 	savedAnimsList.BorderSizePixel = 0
 	savedAnimsList.ScrollBarThickness = 6
 	savedAnimsList.Parent = loadDialogFrame
-	
+
 	local listLayout = Instance.new("UIListLayout")
 	listLayout.Padding = UDim.new(0, 5)
 	listLayout.Parent = savedAnimsList
-	
+
 	local cancelLoadButton = Instance.new("TextButton")
 	cancelLoadButton.Name = "CancelLoadButton"
 	cancelLoadButton.Size = UDim2.new(1, -20, 0, 30)
@@ -641,14 +641,14 @@ local function createUiElements(parentWidget)
 	cancelLoadButton.TextColor3 = Config.Colors.TextPrimary
 	cancelLoadButton.Font = Enum.Font.SourceSansBold
 	cancelLoadButton.Parent = loadDialogFrame
-	
+
 	-- EXPORT DIALOG --
 	local exportDialogGui = Instance.new("ScreenGui")
 	exportDialogGui.Name = "ExportDialogGui"
 	exportDialogGui.Enabled = false
 	exportDialogGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	exportDialogGui.Parent = parentWidget
-	
+
 	local exportDialogFrame = Instance.new("Frame")
 	exportDialogFrame.Name = "ExportDialogFrame"
 	exportDialogFrame.Size = UDim2.new(0, 300, 0, 150)
@@ -666,7 +666,7 @@ local function createUiElements(parentWidget)
 	exportTitle.TextColor3 = Config.Colors.TextPrimary
 	exportTitle.BackgroundColor3 = Config.Colors.DialogHeader
 	exportTitle.Parent = exportDialogFrame
-	
+
 	local exportAnimNameBox = Instance.new("TextBox")
 	exportAnimNameBox.Name = "ExportAnimNameBox"
 	exportAnimNameBox.Size = UDim2.new(1, -20, 0, 30)
@@ -675,7 +675,7 @@ local function createUiElements(parentWidget)
 	exportAnimNameBox.Font = Enum.Font.SourceSans
 	exportAnimNameBox.TextSize = 14
 	exportAnimNameBox.Parent = exportDialogFrame
-	
+
 	local confirmExportButton = Instance.new("TextButton")
 	confirmExportButton.Name = "ConfirmExportButton"
 	confirmExportButton.Size = UDim2.new(0.5, -15, 0, 30)
@@ -685,7 +685,7 @@ local function createUiElements(parentWidget)
 	confirmExportButton.TextColor3 = Config.Colors.TextPrimary
 	confirmExportButton.Font = Enum.Font.SourceSansBold
 	confirmExportButton.Parent = exportDialogFrame
-	
+
 	local cancelExportButton = Instance.new("TextButton")
 	cancelExportButton.Name = "CancelExportButton"
 	cancelExportButton.Size = UDim2.new(0.5, -15, 0, 30)
@@ -721,7 +721,7 @@ local function createUiElements(parentWidget)
 	confirmTitle.TextColor3 = Config.Colors.TextPrimary
 	confirmTitle.BackgroundColor3 = Config.Colors.DialogHeader
 	confirmTitle.Parent = confirmDialogFrame
-	
+
 	local confirmMessage = Instance.new("TextLabel")
 	confirmMessage.Name = "ConfirmMessage"
 	confirmMessage.Size = UDim2.new(1, -20, 0, 60)
@@ -754,7 +754,7 @@ local function createUiElements(parentWidget)
 	confirmCancelButton.TextColor3 = Config.Colors.TextPrimary
 	confirmCancelButton.Font = Enum.Font.SourceSansBold
 	confirmCancelButton.Parent = confirmDialogFrame
-	
+
 	-- PROPERTY SELECTOR MENU --
 	local propMenuFrame = Instance.new("Frame")
 	propMenuFrame.Name = "PropertyMenu"
@@ -764,7 +764,7 @@ local function createUiElements(parentWidget)
 	propMenuFrame.BorderColor3 = Config.Colors.Border
 	propMenuFrame.ZIndex = 10
 	propMenuFrame.Parent = mainFrame
-	
+
 	local propSearchBox = Instance.new("TextBox")
 	propSearchBox.Name = "PropertySearchBox"
 	propSearchBox.Size = UDim2.new(1, -10, 0, 22)
@@ -785,7 +785,7 @@ local function createUiElements(parentWidget)
 	propList.BorderSizePixel = 0
 	propList.ScrollBarThickness = 5
 	propList.Parent = propMenuFrame
-	
+
 	local propListLayout = Instance.new("UIListLayout")
 	propListLayout.Padding = UDim.new(0, 2)
 	propListLayout.Parent = propList
@@ -799,12 +799,12 @@ local function createUiElements(parentWidget)
 	contextMenuFrame.BorderColor3 = Config.Colors.Border
 	contextMenuFrame.ZIndex = 20
 	contextMenuFrame.Parent = mainFrame
-	
+
 	local contextMenuLayout = Instance.new("UIListLayout")
 	contextMenuLayout.Padding = UDim.new(0, 2)
 	contextMenuLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	contextMenuLayout.Parent = contextMenuFrame
-	
+
 	-- MARQUEE SELECTION BOX --
 	local marqueeSelectionBox = Instance.new("Frame")
 	marqueeSelectionBox.Name = "MarqueeSelectionBox"
@@ -937,6 +937,15 @@ local inputService = game:GetService("UserInputService")
 local selection = game:GetService("Selection")
 local ServerStorage = game:GetService("ServerStorage")
 
+-- Definisikan OutBounce secara terpisah untuk mengatasi masalah forward declaration
+local function OutBounce(t)
+	local n1=7.5625; local d1=2.75;
+	if t < 1/d1 then return n1*t*t
+	elseif t < 2/d1 then local t2=t-(1.5/d1); return n1*t2*t2+0.75
+	elseif t < 2.5/d1 then local t2=t-(2.25/d1); return n1*t2*t2+0.9375
+	else local t2=t-(2.625/d1); return n1*t2*t2+0.984375 end
+end
+
 local EasingFunctions = {
 	Linear = function(t) return t end,
 
@@ -1018,19 +1027,12 @@ local EasingFunctions = {
 		if t < 0.5 then return -(math.pow(2,20*t-10)*math.sin((20*t-11.125)*c5))/2
 		else return (math.pow(2,-20*t+10)*math.sin((20*t-11.125)*c5))/2+1 end
 	end,
-
 	-- Bounce
-	OutBounce = function(t)
-		local n1=7.5625; local d1=2.75;
-		if t < 1/d1 then return n1*t*t
-		elseif t < 2/d1 then local t2=t-(1.5/d1); return n1*t2*t2+0.75
-		elseif t < 2.5/d1 then local t2=t-(2.25/d1); return n1*t2*t2+0.9375
-		else local t2=t-(2.625/d1); return n1*t2*t2+0.984375 end
-	end,
-	InBounce = function(t) return 1 - EasingFunctions.OutBounce(1-t) end,
+	OutBounce = OutBounce, -- Referensikan fungsi lokal
+	InBounce = function(t) return 1 - OutBounce(1-t) end, -- Panggil fungsi lokal
 	InOutBounce = function(t)
-		if t < 0.5 then return (1-EasingFunctions.OutBounce(1-2*t))/2
-		else return (1+EasingFunctions.OutBounce(2*t-1))/2 end
+		if t < 0.5 then return (1-OutBounce(1-2*t))/2
+		else return (1+OutBounce(2*t-1))/2 end
 	end
 }
 
@@ -1097,25 +1099,25 @@ local function connectAutoKeyListener(object)
 		if not objectData or not objectData.Properties[propName] then
 			return
 		end
-		
+
 		if not debounceThreads[object] then debounceThreads[object] = {} end
-		
+
 		-- Batalkan thread debounce sebelumnya untuk properti ini, jika ada
 		if debounceThreads[object][propName] then
 			task.cancel(debounceThreads[object][propName])
 		end
-		
+
 		-- Buat thread debounce baru
 		debounceThreads[object][propName] = task.delay(0.1, function()
 			-- Dapatkan frame saat ini
 			local playheadX = ui.playhead.Position.X.Offset
 			local pixelsPerFrame = Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL
 			local currentFrame = math.floor(playheadX / pixelsPerFrame)
-			
+
 			-- Tambahkan atau perbarui keyframe
 			local propData = objectData.Properties[propName]
 			local newValue = object[propName]
-			
+
 			local existingKeyframe = propData.keyframes[currentFrame]
 			if existingKeyframe then
 				existingKeyframe.Value = newValue
@@ -1124,12 +1126,12 @@ local function connectAutoKeyListener(object)
 				createKeyframeMarkerUI(object, propName, currentFrame, nil)
 				updateTimelineRuler() -- Perbarui ruler jika keyframe baru dibuat
 			end
-			
+
 			-- Perbarui tampilan properti jika keyframe yang baru saja diubah adalah yang sedang dipilih
 			if #selectedKeyframes == 1 and selectedKeyframes[1].object == object and selectedKeyframes[1].property == propName and selectedKeyframes[1].frame == currentFrame then
 				updatePropertyDisplay(propData.keyframes[currentFrame], propName)
 			end
-			
+
 			debounceThreads[object][propName] = nil
 		end)
 	end)
@@ -1140,7 +1142,7 @@ local function disconnectAutoKeyListener(object)
 		autoKeyConnections[object]:Disconnect()
 		autoKeyConnections[object] = nil
 	end
-	
+
 	-- Batalkan semua thread debounce yang tertunda untuk objek ini
 	if debounceThreads[object] then
 		for propName, thread in pairs(debounceThreads[object]) do
@@ -1165,7 +1167,7 @@ function handleKeyframeSelection(kfInfo, forceShift)
 	local mainPropName = kfInfo.property
 	local componentName = kfInfo.component
 	local frame = kfInfo.frame
-	
+
 	local propData = animationData[object] and animationData[object].Properties[mainPropName]
 	if not propData then return end
 	local targetTrack = componentName and propData.Components[componentName] or propData
@@ -1229,7 +1231,7 @@ end
 function openContextMenu(target, options)
 	contextMenuTarget = target
 	local menu = ui.contextMenu.frame
-	
+
 	-- Hapus opsi lama
 	for _, child in ipairs(menu:GetChildren()) do
 		if not child:IsA("UIListLayout") then
@@ -1249,7 +1251,7 @@ function openContextMenu(target, options)
 		itemButton.TextXAlignment = Enum.TextXAlignment.Left
 		itemButton.LayoutOrder = i
 		itemButton.Parent = menu
-		
+
 		itemButton.MouseButton1Click:Connect(function()
 			menu.Visible = false
 			optionData.Callback(target)
@@ -1259,10 +1261,10 @@ function openContextMenu(target, options)
 	-- Sesuaikan ukuran dan posisi
 	local numItems = #options
 	menu.Size = UDim2.new(0, 150, 0, numItems * 28)
-	
+
 	local mousePos = inputService:GetMouseLocation()
 	menu.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
-	
+
 	menu.Visible = true
 end
 
@@ -1275,7 +1277,7 @@ function updateKeyframeValue(newValue, componentType, axis)
 
 	local propData = animationData[kfInfo.object].Properties[kfInfo.property]
 	if not propData then return end
-	
+
 	local keyframe = propData.keyframes[kfInfo.frame]
 	if not keyframe then return end
 
@@ -1300,11 +1302,11 @@ function updateKeyframeValue(newValue, componentType, axis)
 			)
 			updated = true
 		end
-		
+
 		if updated then
 			keyframe.Value = CFrame.new(newPos) * CFrame.fromEulerAnglesYXZ(newRot.Y, newRot.X, newRot.Z)
 		end
-		
+
 	elseif typeof(keyframe.Value) == "number" and axis == "X" then
 		keyframe.Value = val
 		updated = true
@@ -1365,22 +1367,22 @@ function deleteTrack(object, propName)
 		-- Hapus track utama CFrame
 		objectData.trackFrame:Destroy()
 		objectData.keyframeContainer:Destroy()
-		
+
 		-- Putuskan koneksi event
 		disconnectAutoKeyListener(object)
-		
+
 		-- Hapus data objek
 		animationData[object] = nil
-		
+
 		if currentlySelectedTrack.object == object then
 			currentlySelectedTrack = { object = nil, property = nil, label = nil }
 		end
 
-	-- Jika ada propName, kita hanya menghapus sub-track properti
+		-- Jika ada propName, kita hanya menghapus sub-track properti
 	else
 		if objectData.Properties[propName] and propName ~= "CFrame" then
 			objectData.Properties[propName] = nil
-			
+
 			local subTrackUi = objectData.subTrackFrames[propName]
 			if subTrackUi then
 				subTrackUi.label:Destroy()
@@ -1393,7 +1395,7 @@ function deleteTrack(object, propName)
 			end
 		end
 	end
-	
+
 	-- Perbarui UI setelah penghapusan
 	updateCanvasSize()
 end
@@ -1446,7 +1448,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		}
 		connectAutoKeyListener(object)
 	end
-	
+
 	local trackLabelHolder = Instance.new("TextButton")
 	trackLabelHolder.Name = (propName or object.Name) .. "_TrackLabel"
 	trackLabelHolder.Size = UDim2.new(1, 0, 0, Config.TRACK_HEIGHT)
@@ -1466,7 +1468,7 @@ function createTrackForObject(object, isSubTrack, propName)
 	trackLabel.BackgroundTransparency = 1
 	trackLabel.TextXAlignment = Enum.TextXAlignment.Left
 	trackLabel.Parent = trackLabelHolder
-	
+
 	local deleteTrackButton = Instance.new("TextButton")
 	deleteTrackButton.Name = "DeleteTrackButton"
 	deleteTrackButton.Size = UDim2.new(0, 20, 0, 20)
@@ -1482,7 +1484,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		local trackName = isSubTrack and propName or object.Name
 		local title = "Hapus Track"
 		local message = "Apakah Anda yakin ingin menghapus track '" .. trackName .. "'? Tindakan ini tidak dapat diurungkan."
-		
+
 		showConfirmation(title, message, function()
 			-- Jika ini sub-track, berikan nama propertinya. Jika tidak, kirim nil untuk menghapus seluruh objek.
 			deleteTrack(object, isSubTrack and propName or nil)
@@ -1491,7 +1493,7 @@ function createTrackForObject(object, isSubTrack, propName)
 
 	if not isSubTrack then
 		trackLabel.Size = UDim2.new(1, -55, 1, 0) -- Space for add and delete buttons
-		
+
 		local addPropButton = Instance.new("TextButton")
 		addPropButton.Size = UDim2.new(0, 20, 0, 20)
 		addPropButton.Position = UDim2.new(1, -50, 0.5, -10) -- To the left of delete button
@@ -1499,7 +1501,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		addPropButton.Font = Enum.Font.SourceSansBold
 		addPropButton.TextSize = 16
 		addPropButton.Parent = trackLabelHolder
-		
+
 		addPropButton.MouseButton1Click:Connect(function()
 			-- Hapus item menu sebelumnya
 			for _, child in ipairs(ui.propMenu.list:GetChildren()) do
@@ -1525,10 +1527,10 @@ function createTrackForObject(object, isSubTrack, propName)
 				ParticleEmitter = {"Acceleration", "Color", "Drag", "Lifetime", "LightEmission", "LightInfluence", "LockedToPart", "Rate", "Rotation", "RotSpeed", "Size", "Speed", "SpreadAngle", "Transparency", "VelocitySpread", "ZOffset", "Enabled"},
 				Trail = {"Color", "Lifetime", "LightEmission", "LightInfluence", "Transparency", "WidthScale"}
 			}
-			
+
 			local supportedValueTypes = { "Vector3", "Color3", "number", "boolean", "UDim2" }
 			local propsToShow = {}
-			
+
 			-- Kumpulkan properti berdasarkan hierarki kelas objek
 			for className, props in pairs(animatablePropertiesByClass) do
 				if object:IsA(className) then
@@ -1537,7 +1539,7 @@ function createTrackForObject(object, isSubTrack, propName)
 					end
 				end
 			end
-			
+
 			-- Urutkan properti berdasarkan abjad
 			local sortedPropNames = {}
 			for name, _ in pairs(propsToShow) do
@@ -1596,7 +1598,7 @@ function createTrackForObject(object, isSubTrack, propName)
 
 		if isExpandable then
 			trackLabel.Size = UDim2.new(1, -55, 1, 0) -- Sisakan ruang untuk tombol expand dan delete
-			
+
 			local expandButton = Instance.new("TextButton")
 			expandButton.Name = "ExpandButton"
 			expandButton.Size = UDim2.new(0, 20, 0, 20)
@@ -1607,7 +1609,7 @@ function createTrackForObject(object, isSubTrack, propName)
 			expandButton.TextColor3 = Config.Colors.TextMuted
 			expandButton.BackgroundTransparency = 1
 			expandButton.Parent = trackLabelHolder
-			
+
 			trackLabel.Position = UDim2.new(0, 25, 0, 0) -- Geser teks properti
 
 			expandButton.MouseButton1Click:Connect(function()
@@ -1620,7 +1622,7 @@ function createTrackForObject(object, isSubTrack, propName)
 						local componentTrackName = propName .. "." .. compName
 						local compTrackLabel, compKeyframeTrack = createTrackForObject(object, true, componentTrackName)
 						propData.ComponentTracks[compName] = {label = compTrackLabel, keyframes = compKeyframeTrack}
-						
+
 						-- Buat marker UI untuk keyframe yang sudah ada dari proses load
 						if propData.Components[compName] then
 							for frame, _ in pairs(propData.Components[compName].keyframes) do
@@ -1641,7 +1643,7 @@ function createTrackForObject(object, isSubTrack, propName)
 			trackLabel.Size = UDim2.new(1, -30, 1, 0) -- Hanya ruang untuk tombol delete
 		end
 	end
-	
+
 	local keyframeTrack = Instance.new("Frame")
 	keyframeTrack.Name = (propName or object.Name) .. "_KeyframeTrack"
 	keyframeTrack.Size = UDim2.new(1, 0, 0, Config.TRACK_HEIGHT)
@@ -1649,7 +1651,7 @@ function createTrackForObject(object, isSubTrack, propName)
 	keyframeTrack.BorderSizePixel = 0
 	keyframeTrack.ClipsDescendants = true
 	keyframeTrack.Parent = ui.keyframeTracksContainer
-	
+
 	trackLabelHolder.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then
 			local trackTarget = { object = object, propName = propName, isSubTrack = isSubTrack }
@@ -1677,7 +1679,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		currentlySelectedTrack = {object = object, property = propName or "CFrame", label = trackLabelHolder, isSub = isSubTrack}
 		print("Track dipilih:", currentlySelectedTrack.property)
 	end)
-	
+
 	if isSubTrack then
 		animationData[object].subTrackFrames[propName] = {label = trackLabelHolder, keyframes = keyframeTrack}
 		local mainTrackOrder = animationData[object].trackFrame.LayoutOrder
@@ -1689,7 +1691,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		trackLabelHolder.LayoutOrder = (#ui.trackListFrame:GetChildren() - 1) * 10
 		keyframeTrack.LayoutOrder = trackLabelHolder.LayoutOrder
 	end
-	
+
 	return trackLabelHolder, keyframeTrack
 end
 
@@ -1719,7 +1721,7 @@ end
 function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
 	local objectData = animationData[object]
 	local propData = objectData.Properties[mainPropName]
-	
+
 	local targetTrack, container
 	if componentName then
 		targetTrack = propData.Components[componentName]
@@ -1740,7 +1742,7 @@ function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
 	if not keyframeData then return nil end
 
 	local playheadX = frame * (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL)
-	
+
 	local keyframeMarker = Instance.new("TextButton")
 	keyframeMarker.Name = tostring(frame)
 	keyframeMarker.Text = ""
@@ -1751,12 +1753,12 @@ function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
 	keyframeMarker.BackgroundColor3 = if keyframeData.Easing == "Linear" then Config.Colors.KeyframeLinear else Config.Colors.KeyframeEased
 	keyframeMarker.Parent = container
 	targetTrack.markers[frame] = keyframeMarker
-	
+
 	keyframeMarker.MouseButton1Click:Connect(function()
 		local kfInfo = { object = object, frame = frame, property = mainPropName, component = componentName, marker = keyframeMarker }
 		handleKeyframeSelection(kfInfo)
 	end)
-	
+
 	keyframeMarker.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			local kfInfo = { object = object, frame = frame, property = mainPropName, component = componentName, marker = keyframeMarker }
@@ -1783,7 +1785,7 @@ function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
 					marker = kfInfo.marker,
 				})
 			end
-			
+
 			draggingKeyframeInfo = { 
 				selection = selectionCopy,
 				originalFrame = frame -- Frame dari keyframe spesifik yang di-klik
@@ -1814,7 +1816,7 @@ function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
 			openContextMenu(keyframeTarget, options)
 		end
 	end)
-	
+
 	return keyframeMarker
 end
 
@@ -1843,7 +1845,7 @@ function updateTimelineRuler()
 
 	local pixelsPerFrame = Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL
 	local newWidth = (maxFrame + Config.FRAMES_PER_INTERVAL * 2) * pixelsPerFrame -- Tambahkan sedikit padding di akhir
-	
+
 	-- Hanya perbarui CanvasSize.X, biarkan Y diurus oleh updateCanvasSize
 	local currentCanvasSize = ui.keyframeAreaFrame.CanvasSize
 	ui.keyframeAreaFrame.CanvasSize = UDim2.new(0, newWidth, 0, currentCanvasSize.Y.Offset)
@@ -1870,7 +1872,7 @@ function updateCanvasSize()
 			totalHeight = totalHeight + child.AbsoluteSize.Y
 		end
 	end
-	
+
 	ui.trackListFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
 	-- Hanya perbarui CanvasSize.Y, biarkan X diurus oleh updateTimelineRuler
 	local currentCanvasSize = ui.keyframeAreaFrame.CanvasSize
@@ -1879,14 +1881,14 @@ end
 
 function updatePropertyDisplay(keyframeData, propName)
 	local isKeyframeSelected = (keyframeData ~= nil)
-	
+
 	-- Tampilkan atau sembunyikan placeholder
 	ui.placeholderLabel.Visible = not isKeyframeSelected
 
 	-- Tampilkan atau sembunyikan kontrol properti
 	ui.easingButton.Visible = isKeyframeSelected
 	ui.deleteKeyframeButton.Visible = isKeyframeSelected
-	
+
 	for _, group in pairs(ui.propertyLabels) do
 		for _, item in pairs(group) do
 			if item:IsA("GuiObject") and item.Parent.Name ~= "Properties" then
@@ -1894,7 +1896,7 @@ function updatePropertyDisplay(keyframeData, propName)
 			end
 		end
 	end
-	
+
 	if not keyframeData then return end
 
 	local value = keyframeData.Value
@@ -1911,7 +1913,7 @@ function updatePropertyDisplay(keyframeData, propName)
 		cframeLabels.rotXHolder.Visible = true
 		cframeLabels.rotYHolder.Visible = true
 		cframeLabels.rotZHolder.Visible = true
-		
+
 		local pos = value.Position
 		local rot = Vector3.new(value:ToEulerAnglesYXZ())
 		cframeLabels.posX.Text = format(pos.X)
@@ -1945,7 +1947,7 @@ function updatePropertyDisplay(keyframeData, propName)
 		local genericLabels = ui.propertyLabels.generic
 		genericLabels.holder.Visible = true
 		genericLabels.nameLabel.Text = propName
-		
+
 		if valueType == "number" then
 			genericLabels.xHolder.Visible = true
 			genericLabels.x.Text = format(value)
@@ -1960,7 +1962,7 @@ function updatePropertyDisplay(keyframeData, propName)
 			genericLabels.z.Text = format(value.Z)
 		end
 	end
-	
+
 	ui.easingButton.Text = "Easing: " .. keyframeData.Easing
 end
 
@@ -1971,7 +1973,7 @@ function updateAnimationFromPlayhead()
 
 	for object, objectAnimData in pairs(animationData) do
 		if not object or not object.Parent then continue end
-		
+
 		for propName, propData in pairs(objectAnimData.Properties) do
 			local finalValue
 
@@ -1998,7 +2000,7 @@ function updateAnimationFromPlayhead()
 					local kf1 = track.keyframes[prevFrame]
 					local kf2 = track.keyframes[nextFrame]
 					if prevFrame == nextFrame then return kf1.Value end
-					
+
 					local alpha = (currentFrame - prevFrame) / (nextFrame - prevFrame)
 					local easing = EasingFunctions[kf1.Easing] or EasingFunctions.Linear
 					return lerp(kf1.Value, kf2.Value, easing(alpha))
@@ -2047,16 +2049,16 @@ end
 
 function onHeartbeat(deltaTime)
 	if not isPlaying then return end
-	
+
 	local pixelsPerFrame = Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL
 	local pixelsPerSecond = pixelsPerFrame * Config.FRAMES_PER_SECOND
-	
+
 	local currentX = ui.playhead.Position.X.Offset
 	local newX = currentX + (pixelsPerSecond * deltaTime)
-	
+
 	local startX = ui.playbackRange.startHandle.Position.X.Offset
 	local endX = ui.playbackRange.endHandle.Position.X.Offset
-	
+
 	if newX >= endX then
 		if isLoopingEnabled then
 			newX = startX
@@ -2066,7 +2068,7 @@ function onHeartbeat(deltaTime)
 			print("Playback selesai.")
 		end
 	end
-	
+
 	ui.playhead.Position = UDim2.new(0, newX, 0, 0)
 	updateAnimationFromPlayhead()
 end
@@ -2109,7 +2111,7 @@ ui.saveDialog.confirmButton.MouseButton1Click:Connect(function()
 		for propName, propTrack in pairs(data.Properties) do
 			local keyframes = {}
 			for frame, keyframeData in pairs(propTrack.keyframes) do
-				
+
 				local valueToSave
 				local valueType = typeof(keyframeData.Value)
 				if valueType == "CFrame" then
@@ -2128,7 +2130,7 @@ ui.saveDialog.confirmButton.MouseButton1Click:Connect(function()
 				elseif valueType == "boolean" then
 					valueToSave = {vType="boolean", val=keyframeData.Value}
 				end
-				
+
 				if valueToSave then
 					keyframes[tostring(frame)] = {
 						Value = valueToSave,
@@ -2136,7 +2138,7 @@ ui.saveDialog.confirmButton.MouseButton1Click:Connect(function()
 					}
 				end
 			end
-			
+
 			local components = {}
 			if data.Properties[propName].Components then
 				for compName, compTrack in pairs(data.Properties[propName].Components) do
@@ -2167,7 +2169,7 @@ ui.saveDialog.confirmButton.MouseButton1Click:Connect(function()
 			else
 				keyStr = string.format("[%s]", tostring(k))
 			end
-			
+
 			if typeof(v) == "table" then
 				str = str .. indentStr .. keyStr .. " = " .. tableToString(v, indent + 1) .. ",\n"
 			elseif typeof(v) == "string" then
@@ -2201,10 +2203,10 @@ ui.loadButton.MouseButton1Click:Connect(function()
 	for _, child in ipairs(ui.loadDialog.list:GetChildren()) do
 		if not child:IsA("UIListLayout") then child:Destroy() end
 	end
-	
+
 	local savesFolder = ServerStorage:FindFirstChild("SuperiorAnimator_Saves")
 	if not savesFolder then return end
-	
+
 	for _, animModule in ipairs(savesFolder:GetChildren()) do
 		if animModule:IsA("ModuleScript") then
 			local itemFrame = Instance.new("Frame")
@@ -2222,7 +2224,7 @@ ui.loadButton.MouseButton1Click:Connect(function()
 			deleteButton.TextColor3 = Config.Colors.TextMuted
 			deleteButton.BackgroundColor3 = Config.Colors.ButtonDelete
 			deleteButton.Parent = itemFrame
-			
+
 			local animButton = Instance.new("TextButton")
 			animButton.Name = animModule.Name
 			animButton.Text = animModule.Name
@@ -2232,7 +2234,7 @@ ui.loadButton.MouseButton1Click:Connect(function()
 			animButton.Font = Enum.Font.SourceSans
 			animButton.TextXAlignment = Enum.TextXAlignment.Left
 			animButton.Parent = itemFrame
-			
+
 			deleteButton.MouseButton1Click:Connect(function()
 				showConfirmation(
 					"Hapus Animasi",
@@ -2247,18 +2249,18 @@ ui.loadButton.MouseButton1Click:Connect(function()
 
 			animButton.MouseButton1Click:Connect(function()
 				clearTimeline()
-				
+
 				local success, loadedData = pcall(require, animModule)
 				if not success then
 					warn("Gagal memuat data animasi:", loadedData)
 					return
 				end
-				
+
 				for path, data in pairs(loadedData.Objects) do
 					local object = workspace:FindFirstChild(path, true)
 					if object then
 						createTrackForObject(object, false)
-						
+
 						for propName, propTrackData in pairs(data.Properties) do
 							if propName ~= "CFrame" then
 								animationData[object].Properties[propName] = { 
@@ -2268,7 +2270,7 @@ ui.loadButton.MouseButton1Click:Connect(function()
 								}
 								createTrackForObject(object, true, propName)
 							end
-							
+
 							-- Muat keyframe utama
 							if propTrackData.Keyframes then
 								for frameStr, keyframeData in pairs(propTrackData.Keyframes) do
@@ -2308,7 +2310,7 @@ ui.loadButton.MouseButton1Click:Connect(function()
 			end)
 		end
 	end
-	
+
 	ui.loadDialog.gui.Enabled = true
 end)
 
@@ -2330,7 +2332,7 @@ ui.exportDialog.confirmButton.MouseButton1Click:Connect(function()
 		print("Superior Animator: Nama animasi untuk ekspor tidak boleh kosong.")
 		return
 	end
-	
+
 	print("Mengekspor animasi sebagai '" .. animName .. "'...")
 
 	local success, result = pcall(function()
@@ -2390,7 +2392,7 @@ ui.exportDialog.confirmButton.MouseButton1Click:Connect(function()
 			local time = frame / Config.FRAMES_PER_SECOND
 			local keyframe = Instance.new("Keyframe")
 			keyframe.Time = time
-			
+
 			local hasPoses = false
 			for object, objectData in pairs(animationData) do
 				if objectData.Properties.CFrame and objectData.Properties.CFrame.keyframes[frame] then
@@ -2398,16 +2400,16 @@ ui.exportDialog.confirmButton.MouseButton1Click:Connect(function()
 					local pose = Instance.new("Pose")
 					pose.Name = object.Name -- Mengasumsikan path relatif
 					pose.CFrame = keyframeCFrameData.Value
-					
+
 					local easingName = keyframeCFrameData.Easing or "Linear"
 					pose.EasingStyle = parseEasingStyleFromName(easingName)
 					pose.EasingDirection = parseEasingDirectionFromName(easingName)
-					
+
 					pose.Parent = keyframe
 					hasPoses = true
 				end
 			end
-			
+
 			-- Hanya tambahkan keyframe jika memiliki setidaknya satu pose
 			if hasPoses then
 				keyframe.Parent = keyframeSequence
@@ -2415,7 +2417,7 @@ ui.exportDialog.confirmButton.MouseButton1Click:Connect(function()
 				keyframe:Destroy()
 			end
 		end
-		
+
 		-- 3. Buat [Type]Keyframe objects untuk properti lain
 		for object, objectData in pairs(animationData) do
 			for propName, propTrack in pairs(objectData.Properties) do
@@ -2424,22 +2426,22 @@ ui.exportDialog.confirmButton.MouseButton1Click:Connect(function()
 						local time = frame / Config.FRAMES_PER_SECOND
 						local valueType = typeof(keyframeData.Value)
 						local propKeyframe
-						
+
 						if valueType == "number" then
 							propKeyframe = Instance.new("NumberKeyframe")
 						elseif valueType == "Vector3" then
 							propKeyframe = Instance.new("Vector3Keyframe")
 						end
-						
+
 						if propKeyframe then
 							propKeyframe.Value = keyframeData.Value
 							propKeyframe.Time = time
 							propKeyframe.Name = object.Name .. "." .. propName -- Mengasumsikan path relatif
-							
+
 							local easingName = keyframeData.Easing or "Linear"
 							propKeyframe.EasingStyle = parseEasingStyleFromName(easingName)
 							propKeyframe.EasingDirection = parseEasingDirectionFromName(easingName)
-							
+
 							propKeyframe.Parent = keyframeSequence
 						end
 					end
@@ -2553,7 +2555,7 @@ ui.keyframeAreaFrame.InputBegan:Connect(function(input)
 		-- Mulai seleksi kotak
 		isMarqueeSelecting = true
 		marqueeStartPoint = input.Position
-		
+
 		-- Kosongkan seleksi saat ini
 		for _, selectedInfo in ipairs(selectedKeyframes) do
 			local prevPropData = animationData[selectedInfo.object].Properties[selectedInfo.property]
@@ -2591,21 +2593,21 @@ inputService.InputChanged:Connect(function(input)
 		-- Hitung posisi dan ukuran kotak
 		local topLeft = Vector2.new(math.min(startPos.X, currentPos.X), math.min(startPos.Y, currentPos.Y))
 		local bottomRight = Vector2.new(math.max(startPos.X, currentPos.X), math.max(startPos.Y, currentPos.Y))
-		
+
 		local relativePos = topLeft - ui.keyframeAreaFrame.AbsolutePosition
 		local size = bottomRight - topLeft
 
 		-- Terapkan ke UI, dengan mempertimbangkan scroll kanvas
 		ui.marqueeSelectionBox.Position = UDim2.new(0, relativePos.X + ui.keyframeAreaFrame.CanvasPosition.X, 0, relativePos.Y + ui.keyframeAreaFrame.CanvasPosition.Y)
 		ui.marqueeSelectionBox.Size = UDim2.new(0, size.X, 0, size.Y)
-		
+
 		-- Deteksi tumpang tindih
 		local selectionRect = Rect.new(topLeft, bottomRight)
-		
+
 		local function checkIntersection(kfInfo, marker)
 			local markerRect = Rect.new(marker.AbsolutePosition, marker.AbsoluteSize)
 			local intersects = not (selectionRect.Min.X > markerRect.Max.X or selectionRect.Max.X < markerRect.Min.X or selectionRect.Min.Y > markerRect.Max.Y or selectionRect.Max.Y < markerRect.Min.Y)
-			
+
 			local alreadySelected = false
 			for _, selInfo in ipairs(selectedKeyframes) do
 				if selInfo.marker == marker then
@@ -2613,7 +2615,7 @@ inputService.InputChanged:Connect(function(input)
 					break
 				end
 			end
-			
+
 			if intersects and not alreadySelected then
 				handleKeyframeSelection(kfInfo, true)
 			elseif not intersects and alreadySelected then
@@ -2639,7 +2641,7 @@ inputService.InputChanged:Connect(function(input)
 	elseif draggingKeyframeInfo and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local mouseX = input.Position.X - ui.keyframeAreaFrame.AbsolutePosition.X + ui.keyframeAreaFrame.CanvasPosition.X
 		mouseX = math.clamp(mouseX, 0, ui.timelineRuler.AbsoluteSize.X)
-		
+
 		-- Hitung delta dari posisi asli keyframe yang diseret
 		local pixelsPerFrame = Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL
 		local originalPixelX = draggingKeyframeInfo.originalFrame * pixelsPerFrame
@@ -2651,20 +2653,20 @@ inputService.InputChanged:Connect(function(input)
 			local newKfX = math.clamp(kfOriginalX + deltaX, 0, ui.timelineRuler.AbsoluteSize.X)
 			kfInfo.marker.Position = UDim2.new(0, newKfX, 0, kfInfo.marker.Position.Y.Offset)
 		end
-		
+
 	elseif draggingPlaybackHandle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local mouseX = input.Position.X - ui.timelineRuler.AbsolutePosition.X
 		mouseX = math.clamp(mouseX, 0, ui.timelineRuler.AbsoluteSize.X)
-		
+
 		local startHandle = ui.playbackRange.startHandle
 		local endHandle = ui.playbackRange.endHandle
-		
+
 		if draggingPlaybackHandle == "Start" then
 			startHandle.Position = UDim2.new(0, math.min(mouseX, endHandle.Position.X.Offset), 0, 0)
 		elseif draggingPlaybackHandle == "End" then
 			endHandle.Position = UDim2.new(0, math.max(mouseX, startHandle.Position.X.Offset), 0, 0)
 		end
-		
+
 		-- Update range frame
 		local startX = startHandle.Position.X.Offset
 		local endX = endHandle.Position.X.Offset
@@ -2683,17 +2685,17 @@ inputService.InputEnded:Connect(function(input)
 		draggingPlaybackHandle = nil
 		if draggingKeyframeInfo then
 			local pixelsPerFrame = Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL
-			
+
 			-- Buat tabel sementara untuk menampung data baru agar tidak konflik saat iterasi
 			local updates = {}
 
 			for _, kfDragInfo in ipairs(draggingKeyframeInfo.selection) do
 				local newFrame = math.floor(kfDragInfo.marker.Position.X.Offset / pixelsPerFrame)
-				
+
 				if newFrame ~= kfDragInfo.originalFrame then
 					local propData = animationData[kfDragInfo.object].Properties[kfDragInfo.property]
 					local targetTrack = kfDragInfo.component and propData.Components[kfDragInfo.component] or propData
-					
+
 					table.insert(updates, {
 						info = kfDragInfo,
 						newFrame = newFrame,
@@ -2704,7 +2706,7 @@ inputService.InputEnded:Connect(function(input)
 					kfDragInfo.marker.Position = UDim2.new(0, kfDragInfo.originalFrame * pixelsPerFrame, 0, kfDragInfo.marker.Position.Y.Offset)
 				end
 			end
-			
+
 			-- Hapus data lama terlebih dahulu untuk menghindari penimpaan
 			for _, update in ipairs(updates) do
 				local kfInfo = update.info
@@ -2720,7 +2722,7 @@ inputService.InputEnded:Connect(function(input)
 				local newFrame = update.newFrame
 				local propData = animationData[kfInfo.object].Properties[kfInfo.property]
 				local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
-				
+
 				-- Pindahkan data dan marker ke frame baru
 				targetTrack.keyframes[newFrame] = update.keyframeData
 				targetTrack.markers[newFrame] = kfInfo.marker
@@ -2758,19 +2760,19 @@ ui.addKeyframeButton.MouseButton1Click:Connect(function()
 
 	local selectedObject = currentlySelectedTrack.object
 	local fullPropName = currentlySelectedTrack.property
-	
+
 	local playheadX = ui.playhead.Position.X.Offset
 	local pixelsPerFrame = Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL
 	local currentFrame = math.floor(playheadX / pixelsPerFrame)
 
 	local mainPropName, componentName = fullPropName:match("([^.]+)%.([^.]+)")
 	mainPropName = mainPropName or fullPropName
-	
+
 	local propData = animationData[selectedObject].Properties[mainPropName]
 	if not propData then return end
-	
+
 	local expandableTypes = {Vector3 = {"X", "Y", "Z"}, Color3 = {"R", "G", "B"}, UDim2 = {"XScale", "XOffset", "YScale", "YOffset"}}
-	
+
 	-- Menangani penambahan keyframe ke track komponen individual
 	if componentName then
 		if not propData.Components[componentName] then
@@ -2778,7 +2780,7 @@ ui.addKeyframeButton.MouseButton1Click:Connect(function()
 		end
 		local compTrack = propData.Components[componentName]
 		if compTrack.keyframes[currentFrame] then return end
-		
+
 		local currentValue = selectedObject[mainPropName]
 		local componentValue
 		if propData.ValueType == "UDim2" then -- Penanganan khusus untuk UDim2
@@ -2787,17 +2789,17 @@ ui.addKeyframeButton.MouseButton1Click:Connect(function()
 		else
 			componentValue = currentValue[componentName]
 		end
-		
+
 		addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", componentName)
 		createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, componentName)
 
-	-- Menangani penambahan keyframe ke track utama (baik diperluas maupun tidak)
+		-- Menangani penambahan keyframe ke track utama (baik diperluas maupun tidak)
 	else
 		-- Jika diperluas, tambahkan keyframe ke semua komponen
 		if propData.IsExpanded then
 			local components = expandableTypes[propData.ValueType]
 			local currentValue = selectedObject[mainPropName]
-			
+
 			for _, compName in ipairs(components) do
 				local compTrack = propData.Components[compName]
 				if compTrack and compTrack.keyframes[currentFrame] then continue end
@@ -2812,7 +2814,7 @@ ui.addKeyframeButton.MouseButton1Click:Connect(function()
 				addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", compName)
 				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, compName)
 			end
-		-- Jika tidak diperluas, tambahkan satu keyframe ke track utama
+			-- Jika tidak diperluas, tambahkan satu keyframe ke track utama
 		else
 			if propData.keyframes[currentFrame] then return end
 			addKeyframeData(selectedObject, mainPropName, currentFrame, selectedObject[mainPropName], "Linear", nil)
@@ -2830,7 +2832,7 @@ ui.playButton.MouseButton1Click:Connect(function()
 		if ui.playhead.Position.X.Offset >= ui.playbackRange.endHandle.Position.X.Offset then
 			ui.playhead.Position = UDim2.new(0, ui.playbackRange.startHandle.Position.X.Offset, 0, 0)
 		end
-		
+
 		isPlaying = true
 		if not playbackConnection then
 			playbackConnection = RunService.Heartbeat:Connect(onHeartbeat)
@@ -2855,7 +2857,7 @@ ui.easingButton.MouseButton1Click:Connect(function()
 	local buttonPos = ui.easingButton.AbsolutePosition
 	local propsPos = ui.propertyLabels.cframe.posHolder.Parent.AbsolutePosition
 	local finalPos = UDim2.new(0, 5, 0, buttonPos.Y - propsPos.Y + ui.easingButton.AbsoluteSize.Y)
-	
+
 	ui.easingMenu.Position = finalPos
 	ui.easingMenu.Visible = not ui.easingMenu.Visible
 end)
@@ -2868,14 +2870,14 @@ ui.mainFrame.InputBegan:Connect(function(input)
 			local mousePos = input.Position
 			local menuRect = Rect.new(ui.easingMenu.AbsolutePosition, ui.easingMenu.AbsoluteSize)
 			local buttonRect = Rect.new(ui.easingButton.AbsolutePosition, ui.easingButton.AbsoluteSize)
-			
+
 			if not (mousePos.X >= menuRect.Min.X and mousePos.X <= menuRect.Max.X and mousePos.Y >= menuRect.Min.Y and mousePos.Y <= menuRect.Max.Y) and
-			   not (mousePos.X >= buttonRect.Min.X and mousePos.X <= buttonRect.Max.X and mousePos.Y >= buttonRect.Min.Y and mousePos.Y <= buttonRect.Max.Y)
+				not (mousePos.X >= buttonRect.Min.X and mousePos.X <= buttonRect.Max.X and mousePos.Y >= buttonRect.Min.Y and mousePos.Y <= buttonRect.Max.Y)
 			then
 				ui.easingMenu.Visible = false
 			end
 		end
-		
+
 		if ui.propMenu.frame.Visible then
 			local mousePos = input.Position
 			local menuRect = Rect.new(ui.propMenu.frame.AbsolutePosition, ui.propMenu.frame.AbsoluteSize)
@@ -2943,13 +2945,13 @@ for _, category in ipairs(easingStyles) do
 		itemButton.MouseButton1Click:Connect(function()
 			if #selectedKeyframes ~= 1 then return end
 			local kfInfo = selectedKeyframes[1]
-			
+
 			local propTrack = animationData[kfInfo.object].Properties[kfInfo.property]
 			if propTrack and propTrack.keyframes[kfInfo.frame] then
 				propTrack.keyframes[kfInfo.frame].Easing = styleName
 				ui.easingButton.Text = "Easing: " .. styleName
 				ui.easingMenu.Visible = false
-				
+
 				-- Perbarui warna marker untuk mencerminkan perubahan easing
 				local marker = kfInfo.marker
 				if marker then
@@ -2976,7 +2978,7 @@ local function deleteSelectedKeyframes()
 			kfInfo.marker:Destroy()
 		end
 	end
-	
+
 	selectedKeyframes = {}
 	updatePropertyDisplay(nil)
 	updateTimelineRuler()
@@ -2986,7 +2988,7 @@ ui.deleteKeyframeButton.MouseButton1Click:Connect(deleteSelectedKeyframes)
 
 inputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	if gameProcessedEvent then return end
-	
+
 	local isCtrlDown = inputService:IsKeyDown(Enum.KeyCode.LeftControl) or inputService:IsKeyDown(Enum.KeyCode.RightControl)
 
 	if input.KeyCode == Enum.KeyCode.Delete then
@@ -2997,10 +2999,10 @@ inputService.InputBegan:Connect(function(input, gameProcessedEvent)
 			local kfInfo = selectedKeyframes[1]
 			local propData = animationData[kfInfo.object].Properties[kfInfo.property]
 			if not propData then return end
-			
+
 			local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
 			local keyframeData = targetTrack.keyframes[kfInfo.frame]
-			
+
 			if keyframeData then
 				keyframeClipboard = {
 					Value = keyframeData.Value,

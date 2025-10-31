@@ -1593,42 +1593,35 @@ ui.exportButton.MouseButton1Click:Connect(function()
 		local keyframeSequence = Instance.new("KeyframeSequence")
 		keyframeSequence.Parent = animation
 
-		-- Fungsi helper untuk mengatasi masalah identitas Enum plugin
-		-- Langsung mencari di tabel Enum global menggunakan nama string untuk mendapatkan item yang benar.
-		local function getRealEnum(enumName, enumTypeName)
-			if enumTypeName == "EasingStyle" then
-				return Enum.EasingStyle[enumName]
-			elseif enumTypeName == "EasingDirection" then
-				return Enum.EasingDirection[enumName]
+		-- ganti getRealEnum dan cara pemakaiannya dengan dua helper sederhana:
+		local function parseEasingStyleFromName(easingName)
+			local name = easingName or "Linear"
+			-- Hilangkan prefix arah untuk mendapat style murni: "InQuad" -> "Quad", "InOutCubic" -> "Cubic"
+			if name:find("InOut") then
+				name = name:gsub("InOut", "")
+			else
+				name = name:gsub("In", ""):gsub("Out", "")
 			end
-			return nil
+			if name == "" then name = "Linear" end
+			local style = Enum.EasingStyle[name]
+			if style == nil then
+				warn("Unknown easing style '" .. tostring(name) .. "', defaulting to Linear.")
+				return Enum.EasingStyle.Linear
+			end
+			return style
 		end
 
-		local function convertEasing(easingName)
-			local name = easingName or "Linear"
-			
-			-- Ekstrak Style dan Direction dari nama
-			local style, direction = "Linear", "InOut"
-			if name:find("InOut") then
-				direction = "InOut"
-				style = name:gsub("InOut", "")
-			elseif name:find("In") then
-				direction = "In"
-				style = name:gsub("In", "")
-			elseif name:find("Out") then
-				direction = "Out"
-				style = name:gsub("Out", "")
+		local function parseEasingDirectionFromName(easingName)
+			local name = easingName or "InOut"
+			if easingName:find("InOut") then
+				return Enum.EasingDirection.InOut
+			elseif easingName:find("In") then
+				return Enum.EasingDirection.In
+			elseif easingName:find("Out") then
+				return Enum.EasingDirection.Out
+			else
+				return Enum.EasingDirection.InOut
 			end
-			
-			if style == "" then style = "Linear" end
-			if style == "Ease" then style = "Quad" end -- Konversi nama lama
-			
-			-- Roblox tidak memiliki OutIn, jadi kita default ke InOut
-			if direction == "OutIn" then
-				direction = "InOut"
-			end
-
-			return style, direction
 		end
 
 		-- 1. Kumpulkan semua frame unik dari CFrame tracks
@@ -1660,9 +1653,8 @@ ui.exportButton.MouseButton1Click:Connect(function()
 					pose.CFrame = keyframeCFrameData.Value
 					
 					local easingName = keyframeCFrameData.Easing or "Linear"
-					local styleName, directionName = convertEasing(easingName)
-					pose.EasingStyle = getRealEnum(styleName, "EasingStyle")
-					pose.EasingDirection = getRealEnum(directionName, "EasingDirection")
+					pose.EasingStyle = parseEasingStyleFromName(easingName)
+					pose.EasingDirection = parseEasingDirectionFromName(easingName)
 					
 					pose.Parent = keyframe
 					hasPoses = true
@@ -1698,9 +1690,8 @@ ui.exportButton.MouseButton1Click:Connect(function()
 							propKeyframe.Name = object.Name .. "." .. propName -- Mengasumsikan path relatif
 							
 							local easingName = keyframeData.Easing or "Linear"
-							local styleName, directionName = convertEasing(easingName)
-							propKeyframe.EasingStyle = getRealEnum(styleName, "EasingStyle")
-							propKeyframe.EasingDirection = getRealEnum(directionName, "EasingDirection")
+							propKeyframe.EasingStyle = parseEasingStyleFromName(easingName)
+							propKeyframe.EasingDirection = parseEasingDirectionFromName(easingName)
 							
 							propKeyframe.Parent = keyframeSequence
 						end

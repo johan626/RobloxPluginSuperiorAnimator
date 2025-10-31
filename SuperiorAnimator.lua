@@ -48,6 +48,24 @@ local Config = {
 	}
 }
 
+-- Forward declarations untuk fungsi yang saling memanggil
+local updateAnimationFromPlayhead
+local updatePropertyDisplay
+local onHeartbeat
+local updateSelectedObjectLabel
+local updateTimelineRuler
+local openContextMenu
+local updateCanvasSize
+local clearTimeline
+local createTrackForObject
+local addKeyframeData
+local createKeyframeMarkerUI
+local deleteTrack
+local updateKeyframeValue
+local openContextMenu
+local handleKeyframeSelection
+local updateTimelineRuler
+
 -- Fungsi ini HANYA membuat dan mengembalikan elemen-elemen UI.
 -- Semua logika perilaku (event) akan dihubungkan di luar fungsi ini.
 local function createUiElements(parentWidget)
@@ -1165,7 +1183,7 @@ function ActionHistory.register(action)
 		table.remove(redoStack, i)
 	end
 
-	updateUndoRedoButtonStates()
+	updateUndoRedoButtonStates() 
 end
 
 function ActionHistory.undo()
@@ -1211,7 +1229,7 @@ local function createEventMarkerUI(object, frame, name)
 
 	local marker = Instance.new("TextButton")
 	marker.Name = "EventMarker_" .. frame
-	marker.Text = ""
+	marker.Text = "" 
 	marker.AnchorPoint = Vector2.new(0.5, 0.5)
 	marker.Size = UDim2.new(0, 12, 0, 12)
 	marker.Position = UDim2.new(0, positionX, 0.5, 0)
@@ -1295,23 +1313,7 @@ local function createEventMarkerUI(object, frame, name)
 	return marker
 end
 
--- Forward declarations untuk fungsi yang saling memanggil
-local updateAnimationFromPlayhead
-local updatePropertyDisplay
-local onHeartbeat
-local updateSelectedObjectLabel
-local updateTimelineRuler
-local openContextMenu
-local updateCanvasSize
-local clearTimeline
-local createTrackForObject
-local addKeyframeData
-local createKeyframeMarkerUI
-local deleteTrack
-local updateKeyframeValue
-local openContextMenu
-local handleKeyframeSelection
-local updateTimelineRuler
+
 
 local function connectAutoKeyListener(object)
 	if not isAutoKeyingEnabled or autoKeyConnections[object] or not animationData[object] then
@@ -1864,8 +1866,8 @@ function createTrackForObject(object, isSubTrack, propName)
 							if object and not animationData[object].Properties[propName] then
 								local action = {
 									redo = function()
-										animationData[object].Properties[propName] = {
-											keyframes = {},
+										animationData[object].Properties[propName] = { 
+											keyframes = {}, 
 											markers = {},
 											Components = {},
 											ComponentTracks = {},
@@ -3728,12 +3730,12 @@ ui.redoButton.MouseButton1Click:Connect(ActionHistory.redo)
 updateUndoRedoButtonStates()
 
 ui.speedDropdown.MouseButton1Click:Connect(function()
-    -- For simplicity, this will cycle through speeds. A proper dropdown would be more complex.
-    local speeds = {0.25, 0.5, 1.0, 2.0}
-    local currentIndex = table.find(speeds, playbackSpeed) or 3
-    local nextIndex = (currentIndex % #speeds) + 1
-    playbackSpeed = speeds[nextIndex]
-    ui.speedDropdown.Text = tostring(playbackSpeed) .. "x"
+	-- For simplicity, this will cycle through speeds. A proper dropdown would be more complex.
+	local speeds = {0.25, 0.5, 1.0, 2.0}
+	local currentIndex = table.find(speeds, playbackSpeed) or 3
+	local nextIndex = (currentIndex % #speeds) + 1
+	playbackSpeed = speeds[nextIndex]
+	ui.speedDropdown.Text = tostring(playbackSpeed) .. "x"
 end)
 
 

@@ -289,10 +289,35 @@ local function createUiElements(parentWidget)
 	local rotY, rotYHolder = createPropertyDisplay("  - Y", 12)
 	local rotZ, rotZHolder = createPropertyDisplay("  - Z", 13)
 
-	local colorLabel, colorHolder = createPropertyDisplay("Color", 14)
-	local colorR, colorRHolder = createPropertyDisplay("  - R", 15)
-	local colorG, colorGHolder = createPropertyDisplay("  - G", 16)
-	local colorB, colorBHolder = createPropertyDisplay("  - B", 17)
+	-- New Color Picker Swatch
+	local colorHolder = Instance.new("Frame")
+	colorHolder.Name = "ColorHolder"
+	colorHolder.Size = UDim2.new(1, -10, 0, 20)
+	colorHolder.Position = UDim2.new(0, 5, 0, 0)
+	colorHolder.BackgroundTransparency = 1
+	colorHolder.LayoutOrder = 14
+	colorHolder.Parent = propertiesFrame
+
+	local colorNameLabel = Instance.new("TextLabel")
+	colorNameLabel.Name = "ColorLabel"
+	colorNameLabel.Size = UDim2.new(0.4, 0, 1, 0)
+	colorNameLabel.Font = Enum.Font.SourceSans
+	colorNameLabel.Text = "Color"
+	colorNameLabel.TextSize = 14
+	colorNameLabel.TextColor3 = Config.Colors.TextDisabled
+	colorNameLabel.BackgroundTransparency = 1
+	colorNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	colorNameLabel.Parent = colorHolder
+
+	local colorSwatch = Instance.new("TextButton")
+	colorSwatch.Name = "ColorSwatch"
+	colorSwatch.Size = UDim2.new(0.6, 0, 1, 0)
+	colorSwatch.Position = UDim2.new(0.4, 0, 0, 0)
+	colorSwatch.Text = ""
+	colorSwatch.BackgroundColor3 = Color3.new(1, 1, 1)
+	colorSwatch.BorderColor3 = Config.Colors.Border
+	colorSwatch.Parent = colorHolder
+
 
 	local udim2Label, udim2Holder = createPropertyDisplay("UDim2", 18)
 	local udim2XS, udim2XSHolder = createPropertyDisplay("  - X Scale", 19)
@@ -300,7 +325,36 @@ local function createUiElements(parentWidget)
 	local udim2YS, udim2YSHolder = createPropertyDisplay("  - Y Scale", 21)
 	local udim2YO, udim2YOHolder = createPropertyDisplay("  - Y Offset", 22)
 
-	local boolValue, boolValueHolder, boolNameLabel = createPropertyDisplay("Value", 23)
+	-- New Boolean Checkbox
+	local boolHolder = Instance.new("Frame")
+	boolHolder.Name = "BoolHolder"
+	boolHolder.Size = UDim2.new(1, -10, 0, 20)
+	boolHolder.Position = UDim2.new(0, 5, 0, 0)
+	boolHolder.BackgroundTransparency = 1
+	boolHolder.LayoutOrder = 23
+	boolHolder.Parent = propertiesFrame
+
+	local boolNameLabel = Instance.new("TextLabel")
+	boolNameLabel.Name = "BoolLabel"
+	boolNameLabel.Size = UDim2.new(0.4, 0, 1, 0)
+	boolNameLabel.Font = Enum.Font.SourceSans
+	boolNameLabel.Text = "Value"
+	boolNameLabel.TextSize = 14
+	boolNameLabel.TextColor3 = Config.Colors.TextDisabled
+	boolNameLabel.BackgroundTransparency = 1
+	boolNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	boolNameLabel.Parent = boolHolder
+
+	local boolCheckbox = Instance.new("TextButton")
+	boolCheckbox.Name = "BoolCheckbox"
+	boolCheckbox.Size = UDim2.new(0, 20, 0, 20)
+	boolCheckbox.Position = UDim2.new(0.4, 0, 0, 0)
+	boolCheckbox.Font = Enum.Font.SourceSansBold
+	boolCheckbox.Text = "✓"
+	boolCheckbox.TextSize = 14
+	boolCheckbox.TextColor3 = Config.Colors.TextPrimary
+	boolCheckbox.BackgroundColor3 = Config.Colors.InputBackground
+	boolCheckbox.Parent = boolHolder
 	
 	local easingButton = Instance.new("TextButton")
 	easingButton.Name = "EasingButton"
@@ -844,8 +898,8 @@ local function createUiElements(parentWidget)
 			},
 			color3 = {
 				holder = colorHolder,
-				rHolder = colorRHolder, gHolder = colorGHolder, bHolder = colorBHolder,
-				r = colorR, g = colorG, b = colorB,
+				nameLabel = colorNameLabel,
+				swatch = colorSwatch,
 			},
 			udim2 = {
 				holder = udim2Holder,
@@ -854,9 +908,9 @@ local function createUiElements(parentWidget)
 				xs = udim2XS, xo = udim2XO, ys = udim2YS, yo = udim2YO,
 			},
 			boolean = {
-				holder = boolValueHolder,
+				holder = boolHolder,
 				nameLabel = boolNameLabel,
-				value = boolValue,
+				checkbox = boolCheckbox,
 			}
 		}
 	}
@@ -1017,6 +1071,22 @@ local marqueeStartPoint = Vector2.new(0, 0)
 
 -- === FUNCTION DEFINITIONS ===
 
+-- Forward declarations untuk fungsi yang saling memanggil
+local updateAnimationFromPlayhead
+local updatePropertyDisplay
+local onHeartbeat
+local updateSelectedObjectLabel
+local updateCanvasSize
+local clearTimeline
+local createTrackForObject
+local addKeyframeData
+local createKeyframeMarkerUI
+local deleteTrack
+local updateKeyframeValue
+local openContextMenu
+local handleKeyframeSelection
+local updateTimelineRuler
+
 local function connectAutoKeyListener(object)
 	if not isAutoKeyingEnabled or autoKeyConnections[object] or not animationData[object] then
 		return
@@ -1056,7 +1126,7 @@ local function connectAutoKeyListener(object)
 			end
 			
 			-- Perbarui tampilan properti jika keyframe yang baru saja diubah adalah yang sedang dipilih
-			if currentlySelectedKeyframe.object == object and currentlySelectedKeyframe.property == propName and currentlySelectedKeyframe.frame == currentFrame then
+			if #selectedKeyframes == 1 and selectedKeyframes[1].object == object and selectedKeyframes[1].property == propName and selectedKeyframes[1].frame == currentFrame then
 				updatePropertyDisplay(propData.keyframes[currentFrame], propName)
 			end
 			
@@ -1088,20 +1158,6 @@ local function showConfirmation(title, message, onConfirm)
 	confirmAction = onConfirm -- Simpan aksi yang akan dijalankan
 	ui.confirmDialog.gui.Enabled = true
 end
-
-local updateAnimationFromPlayhead
-local updatePropertyDisplay
-local onHeartbeat
-local updateSelectedObjectLabel
-local updateCanvasSize
-local clearTimeline
-local createTrackForObject
-local addKeyframeData
-local createKeyframeMarkerUI
-local deleteTrack
-local updateKeyframeValue
-local openContextMenu
-local handleKeyframeSelection
 
 function handleKeyframeSelection(kfInfo, forceShift)
 	local keyframeMarker = kfInfo.marker
@@ -1675,7 +1731,8 @@ function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
 
 	-- Pastikan container UI ada sebelum melanjutkan
 	if not container then
-		warn("Attempted to create a keyframe marker for a track with no UI container:", mainPropName, componentName)
+		-- This can happen normally if data is added before the UI is expanded.
+		-- The UI will be created when the track is expanded.
 		return nil
 	end
 
@@ -1866,12 +1923,8 @@ function updatePropertyDisplay(keyframeData, propName)
 	elseif valueType == "Color3" then
 		local colorLabels = ui.propertyLabels.color3
 		colorLabels.holder.Visible = true
-		colorLabels.rHolder.Visible = true
-		colorLabels.gHolder.Visible = true
-		colorLabels.bHolder.Visible = true
-		colorLabels.r.Text = format(value.R)
-		colorLabels.g.Text = format(value.G)
-		colorLabels.b.Text = format(value.B)
+		colorLabels.nameLabel.Text = propName
+		colorLabels.swatch.BackgroundColor3 = value
 	elseif valueType == "UDim2" then
 		local udimLabels = ui.propertyLabels.udim2
 		udimLabels.holder.Visible = true
@@ -1887,7 +1940,7 @@ function updatePropertyDisplay(keyframeData, propName)
 		local boolLabels = ui.propertyLabels.boolean
 		boolLabels.holder.Visible = true
 		boolLabels.nameLabel.Text = propName
-		boolLabels.value.Text = tostring(value)
+		boolLabels.checkbox.Text = value and "✓" or ""
 	else -- Fallback untuk number dan Vector3
 		local genericLabels = ui.propertyLabels.generic
 		genericLabels.holder.Visible = true
@@ -2888,8 +2941,8 @@ for _, category in ipairs(easingStyles) do
 		itemButton.Parent = ui.easingMenu
 
 		itemButton.MouseButton1Click:Connect(function()
-			local kfInfo = currentlySelectedKeyframe
-			if not kfInfo.object or kfInfo.frame == -1 then return end
+			if #selectedKeyframes ~= 1 then return end
+			local kfInfo = selectedKeyframes[1]
 			
 			local propTrack = animationData[kfInfo.object].Properties[kfInfo.property]
 			if propTrack and propTrack.keyframes[kfInfo.frame] then
@@ -2897,9 +2950,11 @@ for _, category in ipairs(easingStyles) do
 				ui.easingButton.Text = "Easing: " .. styleName
 				ui.easingMenu.Visible = false
 				
-				-- Logika pembaruan warna sudah ditangani dengan benar oleh event klik keyframe,
-				-- jadi tidak perlu ada perubahan warna di sini. Saat keyframe lain dipilih,
-				-- warna yang lama akan diperbarui sesuai dengan nilai Easing yang baru.
+				-- Perbarui warna marker untuk mencerminkan perubahan easing
+				local marker = kfInfo.marker
+				if marker then
+					marker.BackgroundColor3 = Config.Colors.KeyframeEased
+				end
 			end
 		end)
 	end
@@ -3020,6 +3075,42 @@ end)
 updateSelectedObjectLabel()
 updateCanvasSize()
 
+-- Event handler untuk color swatch
+ui.propertyLabels.color3.swatch.MouseButton1Click:Connect(function()
+	if #selectedKeyframes ~= 1 then return end
+	local kfInfo = selectedKeyframes[1]
+
+	local propData = animationData[kfInfo.object].Properties[kfInfo.property]
+	if not propData then return end
+
+	local keyframe = propData.keyframes[kfInfo.frame]
+	if not keyframe or typeof(keyframe.Value) ~= "Color3" then return end
+
+	local success, newColor = plugin:GetColor3(keyframe.Value)
+	if success then
+		keyframe.Value = newColor
+		ui.propertyLabels.color3.swatch.BackgroundColor3 = newColor
+		updateAnimationFromPlayhead()
+	end
+end)
+
+-- Event handler untuk boolean checkbox
+ui.propertyLabels.boolean.checkbox.MouseButton1Click:Connect(function()
+	if #selectedKeyframes ~= 1 then return end
+	local kfInfo = selectedKeyframes[1]
+
+	local propData = animationData[kfInfo.object].Properties[kfInfo.property]
+	if not propData then return end
+
+	local keyframe = propData.keyframes[kfInfo.frame]
+	if not keyframe or typeof(keyframe.Value) ~= "boolean" then return end
+
+	keyframe.Value = not keyframe.Value
+	ui.propertyLabels.boolean.checkbox.Text = keyframe.Value and "✓" or ""
+	updateAnimationFromPlayhead()
+end)
+
+
 -- Hubungkan event untuk pengeditan properti
 local function connectPropEdit(textbox, component, axis)
 	textbox.FocusLost:Connect(function(enterPressed)
@@ -3043,15 +3134,8 @@ connectPropEdit(ui.propertyLabels.generic.y, nil, "Y")
 connectPropEdit(ui.propertyLabels.generic.z, nil, "Z")
 
 -- Color3
-connectPropEdit(ui.propertyLabels.color3.r, nil, "R")
-connectPropEdit(ui.propertyLabels.color3.g, nil, "G")
-connectPropEdit(ui.propertyLabels.color3.b, nil, "B")
-
 -- UDim2
 connectPropEdit(ui.propertyLabels.udim2.xs, nil, "XS")
 connectPropEdit(ui.propertyLabels.udim2.xo, nil, "XO")
 connectPropEdit(ui.propertyLabels.udim2.ys, nil, "YS")
 connectPropEdit(ui.propertyLabels.udim2.yo, nil, "YO")
-
--- Boolean
-connectPropEdit(ui.propertyLabels.boolean.value, nil, nil)

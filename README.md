@@ -20,6 +20,9 @@
     - **Seleksi Kotak:** Klik dan seret di area kosong pada timeline untuk menggambar kotak seleksi dan memilih beberapa keyframe sekaligus.
     - **Seleksi Individual:** Tahan `Shift` sambil mengklik beberapa keyframe untuk menambah atau menghapus dari seleksi.
     - **Manipulasi Massal:** Seret (`drag`) salah satu keyframe yang dipilih untuk memindahkan seluruh grup, atau tekan `Delete` untuk menghapus semuanya.
+- **Editor Properti Interaktif:**
+    - **Color Picker:** Klik pada kotak warna di editor properti untuk membuka color picker bawaan Roblox Studio, memungkinkan pemilihan warna yang cepat dan visual.
+    - **Checkbox Boolean:** Ubah nilai properti `true`/`false` (seperti `Visible` atau `Enabled`) dengan satu klik pada checkbox.
 
 ## 🚀 Cara Penggunaan
 

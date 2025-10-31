@@ -420,7 +420,7 @@ local function createUiElements(parentWidget)
 		marker.BackgroundColor3 = Config.Colors.Separator
 		marker.BorderSizePixel = 0
 		marker.Parent = timelineRuler
-
+		
 		local frameLabel = Instance.new("TextLabel")
 		frameLabel.Size = UDim2.new(0, 50, 0, 12)
 		frameLabel.Position = UDim2.new(0, 3, 0, 0)
@@ -431,7 +431,7 @@ local function createUiElements(parentWidget)
 		frameLabel.BackgroundTransparency = 1
 		frameLabel.TextXAlignment = Enum.TextXAlignment.Left
 		frameLabel.Parent = marker
-
+		
 		-- Hanya tampilkan label waktu pada interval yang signifikan
 		if i % 2 == 0 and i > 0 then
 			local timeLabel = Instance.new("TextLabel")
@@ -710,7 +710,7 @@ local function createUiElements(parentWidget)
 	propMenuFrame.BorderColor3 = Config.Colors.Border
 	propMenuFrame.ZIndex = 10
 	propMenuFrame.Parent = mainFrame
-
+	
 	local propSearchBox = Instance.new("TextBox")
 	propSearchBox.Name = "PropertySearchBox"
 	propSearchBox.Size = UDim2.new(1, -10, 0, 22)
@@ -745,12 +745,12 @@ local function createUiElements(parentWidget)
 	contextMenuFrame.BorderColor3 = Config.Colors.Border
 	contextMenuFrame.ZIndex = 20
 	contextMenuFrame.Parent = mainFrame
-
+	
 	local contextMenuLayout = Instance.new("UIListLayout")
 	contextMenuLayout.Padding = UDim.new(0, 2)
 	contextMenuLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	contextMenuLayout.Parent = contextMenuFrame
-
+	
 	-- MARQUEE SELECTION BOX --
 	local marqueeSelectionBox = Instance.new("Frame")
 	marqueeSelectionBox.Name = "MarqueeSelectionBox"
@@ -1109,7 +1109,7 @@ function handleKeyframeSelection(kfInfo, forceShift)
 	local mainPropName = kfInfo.property
 	local componentName = kfInfo.component
 	local frame = kfInfo.frame
-
+	
 	local propData = animationData[object] and animationData[object].Properties[mainPropName]
 	if not propData then return end
 	local targetTrack = componentName and propData.Components[componentName] or propData
@@ -1173,7 +1173,7 @@ end
 function openContextMenu(target, options)
 	contextMenuTarget = target
 	local menu = ui.contextMenu.frame
-
+	
 	-- Hapus opsi lama
 	for _, child in ipairs(menu:GetChildren()) do
 		if not child:IsA("UIListLayout") then
@@ -1193,7 +1193,7 @@ function openContextMenu(target, options)
 		itemButton.TextXAlignment = Enum.TextXAlignment.Left
 		itemButton.LayoutOrder = i
 		itemButton.Parent = menu
-
+		
 		itemButton.MouseButton1Click:Connect(function()
 			menu.Visible = false
 			optionData.Callback(target)
@@ -1203,10 +1203,10 @@ function openContextMenu(target, options)
 	-- Sesuaikan ukuran dan posisi
 	local numItems = #options
 	menu.Size = UDim2.new(0, 150, 0, numItems * 28)
-
+	
 	local mousePos = inputService:GetMouseLocation()
 	menu.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
-
+	
 	menu.Visible = true
 end
 
@@ -1726,8 +1726,8 @@ function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
 					marker = kfInfo.marker,
 				})
 			end
-
-			draggingKeyframeInfo = {
+			
+			draggingKeyframeInfo = { 
 				selection = selectionCopy,
 				originalFrame = frame -- Frame dari keyframe spesifik yang di-klik
 			}
@@ -1822,7 +1822,7 @@ end
 
 function updatePropertyDisplay(keyframeData, propName)
 	local isKeyframeSelected = (keyframeData ~= nil)
-
+	
 	-- Tampilkan atau sembunyikan placeholder
 	ui.placeholderLabel.Visible = not isKeyframeSelected
 
@@ -2169,7 +2169,7 @@ ui.loadButton.MouseButton1Click:Connect(function()
 			deleteButton.TextColor3 = Config.Colors.TextMuted
 			deleteButton.BackgroundColor3 = Config.Colors.ButtonDelete
 			deleteButton.Parent = itemFrame
-
+			
 			local animButton = Instance.new("TextButton")
 			animButton.Name = animModule.Name
 			animButton.Text = animModule.Name
@@ -2494,18 +2494,13 @@ end)
 -- Event handler untuk seluruh area keyframe, termasuk ruang kosong
 ui.keyframeAreaFrame.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		-- Abaikan jika input dimulai pada salah satu elemen anak interaktif
-		if input.GuiObject and (input.GuiObject:IsA("TextButton") or input.GuiObject.Name == "Playhead") then
-			return
-		end
-
 		-- Guard clause: Abaikan jika sudah menyeret sesuatu yang lain
 		if draggingKeyframeInfo or draggingPlaybackHandle or isDraggingPlayhead then return end
 
 		-- Mulai seleksi kotak
 		isMarqueeSelecting = true
 		marqueeStartPoint = input.Position
-
+		
 		-- Kosongkan seleksi saat ini
 		for _, selectedInfo in ipairs(selectedKeyframes) do
 			local prevPropData = animationData[selectedInfo.object].Properties[selectedInfo.property]
@@ -2543,21 +2538,21 @@ inputService.InputChanged:Connect(function(input)
 		-- Hitung posisi dan ukuran kotak
 		local topLeft = Vector2.new(math.min(startPos.X, currentPos.X), math.min(startPos.Y, currentPos.Y))
 		local bottomRight = Vector2.new(math.max(startPos.X, currentPos.X), math.max(startPos.Y, currentPos.Y))
-
+		
 		local relativePos = topLeft - ui.keyframeAreaFrame.AbsolutePosition
 		local size = bottomRight - topLeft
 
 		-- Terapkan ke UI, dengan mempertimbangkan scroll kanvas
 		ui.marqueeSelectionBox.Position = UDim2.new(0, relativePos.X + ui.keyframeAreaFrame.CanvasPosition.X, 0, relativePos.Y + ui.keyframeAreaFrame.CanvasPosition.Y)
 		ui.marqueeSelectionBox.Size = UDim2.new(0, size.X, 0, size.Y)
-
+		
 		-- Deteksi tumpang tindih
 		local selectionRect = Rect.new(topLeft, bottomRight)
-
+		
 		local function checkIntersection(kfInfo, marker)
 			local markerRect = Rect.new(marker.AbsolutePosition, marker.AbsoluteSize)
 			local intersects = not (selectionRect.Min.X > markerRect.Max.X or selectionRect.Max.X < markerRect.Min.X or selectionRect.Min.Y > markerRect.Max.Y or selectionRect.Max.Y < markerRect.Min.Y)
-
+			
 			local alreadySelected = false
 			for _, selInfo in ipairs(selectedKeyframes) do
 				if selInfo.marker == marker then
@@ -2565,7 +2560,7 @@ inputService.InputChanged:Connect(function(input)
 					break
 				end
 			end
-
+			
 			if intersects and not alreadySelected then
 				handleKeyframeSelection(kfInfo, true)
 			elseif not intersects and alreadySelected then
@@ -2591,7 +2586,7 @@ inputService.InputChanged:Connect(function(input)
 	elseif draggingKeyframeInfo and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local mouseX = input.Position.X - ui.keyframeAreaFrame.AbsolutePosition.X + ui.keyframeAreaFrame.CanvasPosition.X
 		mouseX = math.clamp(mouseX, 0, ui.timelineRuler.AbsoluteSize.X)
-
+		
 		-- Hitung delta dari posisi asli keyframe yang diseret
 		local pixelsPerFrame = Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL
 		local originalPixelX = draggingKeyframeInfo.originalFrame * pixelsPerFrame
@@ -2603,7 +2598,7 @@ inputService.InputChanged:Connect(function(input)
 			local newKfX = math.clamp(kfOriginalX + deltaX, 0, ui.timelineRuler.AbsoluteSize.X)
 			kfInfo.marker.Position = UDim2.new(0, newKfX, 0, kfInfo.marker.Position.Y.Offset)
 		end
-
+		
 	elseif draggingPlaybackHandle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local mouseX = input.Position.X - ui.timelineRuler.AbsolutePosition.X
 		mouseX = math.clamp(mouseX, 0, ui.timelineRuler.AbsoluteSize.X)
@@ -2635,7 +2630,7 @@ inputService.InputEnded:Connect(function(input)
 		draggingPlaybackHandle = nil
 		if draggingKeyframeInfo then
 			local pixelsPerFrame = Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL
-
+			
 			-- Buat tabel sementara untuk menampung data baru agar tidak konflik saat iterasi
 			local updates = {}
 
@@ -2645,7 +2640,7 @@ inputService.InputEnded:Connect(function(input)
 				if newFrame ~= kfDragInfo.originalFrame then
 					local propData = animationData[kfDragInfo.object].Properties[kfDragInfo.property]
 					local targetTrack = kfDragInfo.component and propData.Components[kfDragInfo.component] or propData
-
+					
 					table.insert(updates, {
 						info = kfDragInfo,
 						newFrame = newFrame,
@@ -2656,7 +2651,7 @@ inputService.InputEnded:Connect(function(input)
 					kfDragInfo.marker.Position = UDim2.new(0, kfDragInfo.originalFrame * pixelsPerFrame, 0, kfDragInfo.marker.Position.Y.Offset)
 				end
 			end
-
+			
 			-- Hapus data lama terlebih dahulu untuk menghindari penimpaan
 			for _, update in ipairs(updates) do
 				local kfInfo = update.info
@@ -2672,7 +2667,7 @@ inputService.InputEnded:Connect(function(input)
 				local newFrame = update.newFrame
 				local propData = animationData[kfInfo.object].Properties[kfInfo.property]
 				local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
-
+				
 				-- Pindahkan data dan marker ke frame baru
 				targetTrack.keyframes[newFrame] = update.keyframeData
 				targetTrack.markers[newFrame] = kfInfo.marker
@@ -2901,7 +2896,7 @@ for _, category in ipairs(easingStyles) do
 				propTrack.keyframes[kfInfo.frame].Easing = styleName
 				ui.easingButton.Text = "Easing: " .. styleName
 				ui.easingMenu.Visible = false
-
+				
 				-- Logika pembaruan warna sudah ditangani dengan benar oleh event klik keyframe,
 				-- jadi tidak perlu ada perubahan warna di sini. Saat keyframe lain dipilih,
 				-- warna yang lama akan diperbarui sesuai dengan nilai Easing yang baru.
@@ -2926,7 +2921,7 @@ local function deleteSelectedKeyframes()
 			kfInfo.marker:Destroy()
 		end
 	end
-
+	
 	selectedKeyframes = {}
 	updatePropertyDisplay(nil)
 	updateTimelineRuler()
@@ -2947,10 +2942,10 @@ inputService.InputBegan:Connect(function(input, gameProcessedEvent)
 			local kfInfo = selectedKeyframes[1]
 			local propData = animationData[kfInfo.object].Properties[kfInfo.property]
 			if not propData then return end
-
+			
 			local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
 			local keyframeData = targetTrack.keyframes[kfInfo.frame]
-
+			
 			if keyframeData then
 				keyframeClipboard = {
 					Value = keyframeData.Value,

@@ -1594,18 +1594,14 @@ ui.exportButton.MouseButton1Click:Connect(function()
 		keyframeSequence.Parent = animation
 
 		-- Fungsi helper untuk mengatasi masalah identitas Enum plugin
-		local function getRealEnum(enumItem, enumTypeName)
-			local dummy = Instance.new("Pose")
-			local realEnum
+		-- Langsung mencari di tabel Enum global menggunakan nama string untuk mendapatkan item yang benar.
+		local function getRealEnum(enumName, enumTypeName)
 			if enumTypeName == "EasingStyle" then
-				dummy.EasingStyle = enumItem
-				realEnum = dummy.EasingStyle
+				return Enum.EasingStyle[enumName]
 			elseif enumTypeName == "EasingDirection" then
-				dummy.EasingDirection = enumItem
-				realEnum = dummy.EasingDirection
+				return Enum.EasingDirection[enumName]
 			end
-			dummy:Destroy()
-			return realEnum
+			return nil
 		end
 
 		local function convertEasing(easingName)
@@ -1624,18 +1620,15 @@ ui.exportButton.MouseButton1Click:Connect(function()
 				style = name:gsub("Out", "")
 			end
 			
+			if style == "" then style = "Linear" end
 			if style == "Ease" then style = "Quad" end -- Konversi nama lama
-
-			-- Petakan nama string ke Enum
-			local easingStyleEnum = Enum.EasingStyle[style] or Enum.EasingStyle.Linear
-			local easingDirectionEnum = Enum.EasingDirection[direction] or Enum.EasingDirection.InOut
 			
 			-- Roblox tidak memiliki OutIn, jadi kita default ke InOut
 			if direction == "OutIn" then
-				easingDirectionEnum = Enum.EasingDirection.InOut
+				direction = "InOut"
 			end
 
-			return easingStyleEnum, easingDirectionEnum
+			return style, direction
 		end
 
 		-- 1. Kumpulkan semua frame unik dari CFrame tracks
@@ -1667,9 +1660,9 @@ ui.exportButton.MouseButton1Click:Connect(function()
 					pose.CFrame = keyframeCFrameData.Value
 					
 					local easingName = keyframeCFrameData.Easing or "Linear"
-					local style, direction = convertEasing(easingName)
-					pose.EasingStyle = getRealEnum(style, "EasingStyle")
-					pose.EasingDirection = getRealEnum(direction, "EasingDirection")
+					local styleName, directionName = convertEasing(easingName)
+					pose.EasingStyle = getRealEnum(styleName, "EasingStyle")
+					pose.EasingDirection = getRealEnum(directionName, "EasingDirection")
 					
 					pose.Parent = keyframe
 					hasPoses = true
@@ -1705,9 +1698,9 @@ ui.exportButton.MouseButton1Click:Connect(function()
 							propKeyframe.Name = object.Name .. "." .. propName -- Mengasumsikan path relatif
 							
 							local easingName = keyframeData.Easing or "Linear"
-							local style, direction = convertEasing(easingName)
-							propKeyframe.EasingStyle = getRealEnum(style, "EasingStyle")
-							propKeyframe.EasingDirection = getRealEnum(direction, "EasingDirection")
+							local styleName, directionName = convertEasing(easingName)
+							propKeyframe.EasingStyle = getRealEnum(styleName, "EasingStyle")
+							propKeyframe.EasingDirection = getRealEnum(directionName, "EasingDirection")
 							
 							propKeyframe.Parent = keyframeSequence
 						end

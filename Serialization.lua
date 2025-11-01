@@ -35,9 +35,9 @@ function Serialization.save(animationData, animName, httpService)
 		return false
 	end
 
-	local serializableData = {
+	local serializableData = { 
 		Version = 2, -- Tandai format baru
-		Objects = {}
+		Objects = {} 
 	}
 
 	for uid, data in pairs(animationData) do
@@ -88,17 +88,17 @@ function Serialization.save(animationData, animName, httpService)
 				end
 			end
 
-			properties[propName] = {
-				Keyframes = keyframes,
-				Components = components,
-				ValueType = propTrack.ValueType
+			properties[propName] = { 
+				Keyframes = keyframes, 
+				Components = components, 
+				ValueType = propTrack.ValueType 
 			}
 		end
 
 		local objectName = (uid == "SuperiorAnimator_Camera") and "Camera" or data.object.Name
-		serializableData.Objects[uid] = {
+		serializableData.Objects[uid] = { 
 			Name = objectName, -- Simpan nama untuk referensi
-			Properties = properties
+			Properties = properties 
 		}
 	end
 

@@ -190,6 +190,17 @@ function UIManager.create(parentWidget, Config)
 	addCameraButton.LayoutOrder = 15
 	addCameraButton.Parent = topBarFrame
 
+	local cameraLockButton = Instance.new("TextButton")
+	cameraLockButton.Name = "CameraLockButton"
+	cameraLockButton.Size = UDim2.new(0, 28, 0, 28)
+	cameraLockButton.Text = "📹"
+	cameraLockButton.BackgroundColor3 = Config.Colors.ButtonSecondary
+	cameraLockButton.TextColor3 = Config.Colors.TextPrimary
+	cameraLockButton.Font = Enum.Font.SourceSansBold
+	cameraLockButton.TextSize = 16
+	cameraLockButton.LayoutOrder = 16
+	cameraLockButton.Parent = topBarFrame
+
 	local addKeyframeButton = Instance.new("TextButton")
 	addKeyframeButton.Name = "AddKeyframeButton"
 	addKeyframeButton.Size = UDim2.new(0, 28, 0, 28)
@@ -198,7 +209,7 @@ function UIManager.create(parentWidget, Config)
 	addKeyframeButton.TextSize = 24
 	addKeyframeButton.BackgroundColor3 = Config.Colors.ButtonSecondary
 	addKeyframeButton.TextColor3 = Config.Colors.TextPrimary
-	addKeyframeButton.LayoutOrder = 16
+	addKeyframeButton.LayoutOrder = 17
 	addKeyframeButton.Parent = topBarFrame
 
 	local autoKeyButton = Instance.new("TextButton")
@@ -209,18 +220,18 @@ function UIManager.create(parentWidget, Config)
 	autoKeyButton.TextColor3 = Config.Colors.TextPrimary
 	autoKeyButton.Font = Enum.Font.SourceSansBold
 	autoKeyButton.TextSize = 14
-	autoKeyButton.LayoutOrder = 17
+	autoKeyButton.LayoutOrder = 18
 	autoKeyButton.Parent = topBarFrame
 
 	local separator3 = Instance.new("Frame")
 	separator3.Size = UDim2.new(0, 1, 0, 28)
 	separator3.BackgroundColor3 = Config.Colors.Separator
-	separator3.LayoutOrder = 18
+	separator3.LayoutOrder = 19
 	separator3.Parent = topBarFrame
 
 	local selectedObjectLabel = Instance.new("TextLabel")
 	selectedObjectLabel.Name = "SelectedObjectLabel"
-	selectedObjectLabel.Size = UDim2.new(1, -800, 1, 0) -- Adjusted size for new buttons
+	selectedObjectLabel.Size = UDim2.new(1, -835, 1, 0) -- Adjusted size for new buttons
 	selectedObjectLabel.Font = Enum.Font.SourceSans
 	selectedObjectLabel.TextSize = 14
 	selectedObjectLabel.TextColor3 = Config.Colors.TextMuted
@@ -909,6 +920,7 @@ function UIManager.create(parentWidget, Config)
 		zoomOutButton = zoomOutButton,
 		addObjectButton = addObjectButton,
 		addCameraButton = addCameraButton,
+		cameraLockButton = cameraLockButton,
 		addKeyframeButton = addKeyframeButton,
 		autoKeyButton = autoKeyButton,
 		easingButton = easingButton,

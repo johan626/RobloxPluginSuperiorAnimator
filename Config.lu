@@ -1,0 +1,48 @@
+-- SuperiorAnimator/src/Config.lua
+
+local Config = {
+	TRACK_HEIGHT = 28,
+	FRAMES_PER_SECOND = 24,
+	PIXELS_PER_FRAME_INTERVAL = 60,
+	FRAMES_PER_INTERVAL = 10,
+	MAX_FRAMES = 1000,
+	Colors = {
+		-- Latar Belakang
+		MainBackground = Color3.fromRGB(45, 45, 45),
+		ContentBackground = Color3.fromRGB(50, 50, 50),
+		PropertiesBackground = Color3.fromRGB(40, 40, 40),
+		TopBarBackground = Color3.fromRGB(35, 35, 35),
+		TrackListBackground = Color3.fromRGB(60, 60, 60),
+		TrackBackground = Color3.fromRGB(55, 55, 55),
+		SubTrackBackground = Color3.fromRGB(58, 58, 58),
+		SubTrackLabelBackground = Color3.fromRGB(65, 65, 65),
+		DialogBackground = Color3.fromRGB(50, 50, 50),
+		DialogHeader = Color3.fromRGB(40, 40, 40),
+		InputBackground = Color3.fromRGB(50, 50, 50),
+
+		-- Teks
+		TextPrimary = Color3.fromRGB(255, 255, 255),
+		TextSecondary = Color3.fromRGB(220, 220, 220),
+		TextMuted = Color3.fromRGB(200, 200, 200),
+		TextDisabled = Color3.fromRGB(180, 180, 180),
+
+		-- Tombol
+		ButtonPrimary = Color3.fromRGB(70, 90, 120),
+		ButtonSecondary = Color3.fromRGB(80, 80, 80),
+		ButtonDanger = Color3.fromRGB(120, 70, 70),
+		ButtonDelete = Color3.fromRGB(80, 50, 50),
+
+		-- Timeline
+		Playhead = Color3.fromRGB(255, 80, 80),
+		KeyframeLinear = Color3.fromRGB(255, 255, 0),
+		KeyframeEased = Color3.fromRGB(0, 255, 127),
+		KeyframeSelected = Color3.fromRGB(0, 170, 255),
+		TrackSelected = Color3.fromRGB(80, 80, 100),
+
+		-- Lain-lain
+		Border = Color3.fromRGB(80, 80, 80),
+		Separator = Color3.fromRGB(60, 60, 60),
+	}
+}
+
+return Config

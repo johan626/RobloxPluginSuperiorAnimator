@@ -97,7 +97,8 @@ end
 function TimelineLogic:setCurrentFrame(frame, isPlaying)
 	self.currentFrame = math.clamp(frame, 0, self.Config.MAX_FRAMES)
 
-	for object, data in pairs(self.animationData) do
+	for uid, data in pairs(self.animationData) do
+		local object = data.object
 		if not object or not object.Parent then continue end
 
 		local cframeComponents = {}

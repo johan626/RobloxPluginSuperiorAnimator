@@ -28,15 +28,21 @@ local function tableToString(tbl, indent)
 	return str .. string.rep("\t", indent) .. "}"
 end
 
-function Serialization.save(animationData, animName)
+function Serialization.save(animationData, animName, httpService)
 	if animName == "" or animName:match("^%s*$") then
+		-- TODO: Ganti dengan UI notifikasi
 		print("Superior Animator: Nama animasi tidak boleh kosong.")
 		return false
 	end
 
-	local serializableData = { Objects = {} }
-	for object, data in pairs(animationData) do
-		local path = object:GetFullName()
+	local serializableData = {
+		Version = 2, -- Tandai format baru
+		Objects = {}
+	}
+
+	for uid, data in pairs(animationData) do
+		if not data.object then continue end
+
 		local properties = {}
 		for propName, propTrack in pairs(data.Properties) do
 			local keyframes = {}
@@ -69,10 +75,10 @@ function Serialization.save(animationData, animName)
 			end
 
 			local components = {}
-			if data.Properties[propName].Components then
-				for compName, compTrack in pairs(data.Properties[propName].Components) do
+			if propTrack.Components then
+				for compName, compTrackData in pairs(propTrack.Components) do
 					local compKeyframes = {}
-					for frame, keyframeData in pairs(compTrack.keyframes) do
+					for frame, keyframeData in pairs(compTrackData.keyframes) do
 						compKeyframes[tostring(frame)] = {
 							Value = {vType="number", val=keyframeData.Value}, -- Komponen selalu angka
 							Easing = keyframeData.Easing
@@ -82,12 +88,26 @@ function Serialization.save(animationData, animName)
 				end
 			end
 
-			properties[propName] = { Keyframes = keyframes, Components = components, ValueType = data.Properties[propName].ValueType }
+			properties[propName] = {
+				Keyframes = keyframes,
+				Components = components,
+				ValueType = propTrack.ValueType
+			}
 		end
-		serializableData.Objects[path] = { Properties = properties }
+
+		local objectName = (uid == "SuperiorAnimator_Camera") and "Camera" or data.object.Name
+		serializableData.Objects[uid] = {
+			Name = objectName, -- Simpan nama untuk referensi
+			Properties = properties
+		}
 	end
 
-	local moduleSource = "return " .. tableToString(serializableData)
+	local success, jsonString = pcall(httpService.JSONEncode, httpService, serializableData)
+	if not success then
+		-- TODO: Tampilkan notifikasi error
+		warn("Gagal meng-encode data animasi ke JSON:", jsonString)
+		return false
+	end
 
 	local savesFolder = ReplicatedStorage:FindFirstChild("SuperiorAnimator_Saves")
 	if not savesFolder then
@@ -96,10 +116,17 @@ function Serialization.save(animationData, animName)
 		savesFolder.Parent = ReplicatedStorage
 	end
 
-	local newAnimModule = Instance.new("ModuleScript")
-	newAnimModule.Name = animName
-	newAnimModule.Source = moduleSource
-	newAnimModule.Parent = savesFolder
+	-- Hapus file lama jika ada
+	local existingSave = savesFolder:FindFirstChild(animName)
+	if existingSave then
+		existingSave:Destroy()
+	end
+
+	-- Gunakan StringValue untuk menyimpan data JSON
+	local saveInstance = Instance.new("StringValue")
+	saveInstance.Name = animName
+	saveInstance.Value = jsonString
+	saveInstance.Parent = savesFolder
 
 	return true
 end

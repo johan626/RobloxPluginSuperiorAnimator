@@ -179,6 +179,17 @@ function UIManager.create(parentWidget, Config)
 	addObjectButton.LayoutOrder = 14
 	addObjectButton.Parent = topBarFrame
 
+	local addCameraButton = Instance.new("TextButton")
+	addCameraButton.Name = "AddCameraButton"
+	addCameraButton.Size = UDim2.new(0, 100, 0, 28)
+	addCameraButton.Text = "Add Camera"
+	addCameraButton.BackgroundColor3 = Config.Colors.ButtonSecondary
+	addCameraButton.TextColor3 = Config.Colors.TextPrimary
+	addCameraButton.Font = Enum.Font.SourceSansBold
+	addCameraButton.TextSize = 14
+	addCameraButton.LayoutOrder = 15
+	addCameraButton.Parent = topBarFrame
+
 	local addKeyframeButton = Instance.new("TextButton")
 	addKeyframeButton.Name = "AddKeyframeButton"
 	addKeyframeButton.Size = UDim2.new(0, 28, 0, 28)
@@ -187,7 +198,7 @@ function UIManager.create(parentWidget, Config)
 	addKeyframeButton.TextSize = 24
 	addKeyframeButton.BackgroundColor3 = Config.Colors.ButtonSecondary
 	addKeyframeButton.TextColor3 = Config.Colors.TextPrimary
-	addKeyframeButton.LayoutOrder = 15
+	addKeyframeButton.LayoutOrder = 16
 	addKeyframeButton.Parent = topBarFrame
 
 	local autoKeyButton = Instance.new("TextButton")
@@ -198,25 +209,25 @@ function UIManager.create(parentWidget, Config)
 	autoKeyButton.TextColor3 = Config.Colors.TextPrimary
 	autoKeyButton.Font = Enum.Font.SourceSansBold
 	autoKeyButton.TextSize = 14
-	autoKeyButton.LayoutOrder = 16
+	autoKeyButton.LayoutOrder = 17
 	autoKeyButton.Parent = topBarFrame
 
 	local separator3 = Instance.new("Frame")
 	separator3.Size = UDim2.new(0, 1, 0, 28)
 	separator3.BackgroundColor3 = Config.Colors.Separator
-	separator3.LayoutOrder = 17
+	separator3.LayoutOrder = 18
 	separator3.Parent = topBarFrame
 
 	local selectedObjectLabel = Instance.new("TextLabel")
 	selectedObjectLabel.Name = "SelectedObjectLabel"
-	selectedObjectLabel.Size = UDim2.new(1, -700, 1, 0) -- Adjusted size for new buttons
+	selectedObjectLabel.Size = UDim2.new(1, -800, 1, 0) -- Adjusted size for new buttons
 	selectedObjectLabel.Font = Enum.Font.SourceSans
 	selectedObjectLabel.TextSize = 14
 	selectedObjectLabel.TextColor3 = Config.Colors.TextMuted
 	selectedObjectLabel.BackgroundTransparency = 1
 	selectedObjectLabel.TextXAlignment = Enum.TextXAlignment.Right
 	selectedObjectLabel.Text = "Tidak ada objek yang dipilih"
-	selectedObjectLabel.LayoutOrder = 18
+	selectedObjectLabel.LayoutOrder = 19
 	selectedObjectLabel.Parent = topBarFrame
 
 	-- MAIN CONTENT --
@@ -897,6 +908,7 @@ function UIManager.create(parentWidget, Config)
 		zoomInButton = zoomInButton,
 		zoomOutButton = zoomOutButton,
 		addObjectButton = addObjectButton,
+		addCameraButton = addCameraButton,
 		addKeyframeButton = addKeyframeButton,
 		autoKeyButton = autoKeyButton,
 		easingButton = easingButton,

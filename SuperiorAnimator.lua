@@ -23,6 +23,7 @@ local updateKeyframeValue
 local openContextMenu
 local handleKeyframeSelection
 local updateTimelineRuler
+local addKeyframeAction
 
 -- Fungsi ini HANYA membuat dan mengembalikan elemen-elemen UI.
 local UIManager = require(script.src.UIManager)
@@ -47,6 +48,7 @@ local RunService = game:GetService("RunService")
 local inputService = game:GetService("UserInputService")
 local selection = game:GetService("Selection")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 
 -- Definisikan OutBounce secara terpisah untuk mengatasi masalah forward declaration
 local EasingModule = require(script.src.EasingFunctions)
@@ -77,6 +79,7 @@ local state = {
 	zoomLevel = 1.0, -- 1.0 = 100% zoom
 	playbackSpeed = 1.0, -- 1.0 = 100% speed
 	isLoopingEnabled = false,
+	originalCameraType = nil,
 }
 
 -- === MODUL LOGIKA ===
@@ -91,8 +94,11 @@ local ActionHistory = ActionHistoryManager.new(ui, Config)
 -- === FUNCTION DEFINITIONS ===
 
 local function createEventMarkerUI(object, frame, name)
-	local eventTrack = state.animationData[object].Events
-	local container = state.animationData[object].eventTrackUI.keyframes
+	local objectUID = object:GetAttribute("SuperiorAnimator_UID")
+	if not objectUID or not state.animationData[objectUID] then return nil end
+
+	local eventTrack = state.animationData[objectUID].Events
+	local container = state.animationData[objectUID].eventTrackUI.keyframes
 	if not container then return nil end
 
 	local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
@@ -114,7 +120,9 @@ local function createEventMarkerUI(object, frame, name)
 		if state.currentSelection.type ~= "Event" then
 			for _, selectedInfo in ipairs(state.currentSelection.data) do
 				if selectedInfo.marker and selectedInfo.marker.Parent then
-					local prevPropData = state.animationData[selectedInfo.object].Properties[selectedInfo.property]
+				local selectedObjectUID = selectedInfo.object:GetAttribute("SuperiorAnimator_UID")
+				if not selectedObjectUID then continue end
+				local prevPropData = state.animationData[selectedObjectUID].Properties[selectedInfo.property]
 					if prevPropData then
 						local prevKeyframeData = (selectedInfo.component and prevPropData.Components[selectedInfo.component] or prevPropData).keyframes[selectedInfo.frame]
 						if prevKeyframeData then
@@ -143,7 +151,9 @@ local function createEventMarkerUI(object, frame, name)
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then
 			local options = {
 				{ Text = "Delete Event", Callback = function(target)
-					local eventTrack = state.animationData[target.object].Events
+					local objectUID = target.object:GetAttribute("SuperiorAnimator_UID")
+					if not objectUID then return end
+					local eventTrack = state.animationData[objectUID].Events
 					local eventData = eventTrack.keyframes[target.frame]
 					if not eventData then return end
 
@@ -177,12 +187,13 @@ end
 
 
 local function connectAutoKeyListener(object)
-	if not state.isAutoKeyingEnabled or state.autoKeyConnections[object] or not state.animationData[object] then
+	local objectUID = object:GetAttribute("SuperiorAnimator_UID")
+	if not state.isAutoKeyingEnabled or state.autoKeyConnections[object] or not (objectUID and state.animationData[objectUID]) then
 		return
 	end
 
 	state.autoKeyConnections[object] = object.Changed:Connect(function(propName)
-		local objectData = state.animationData[object]
+		local objectData = state.animationData[objectUID]
 		if not objectData or not objectData.Properties[propName] then
 			return
 		end
@@ -255,8 +266,15 @@ function handleKeyframeSelection(kfInfo, forceShift)
 	local componentName = kfInfo.component
 	local frame = kfInfo.frame
 
-	local propData = state.animationData[object] and state.animationData[object].Properties[mainPropName]
+	local objectUID = object:GetAttribute("SuperiorAnimator_UID")
+	if not objectUID then return end
+
+	local objectData = state.animationData[objectUID]
+	if not objectData then return end
+
+	local propData = objectData.Properties[mainPropName]
 	if not propData then return end
+
 	local targetTrack = componentName and propData.Components[componentName] or propData
 	if not targetTrack then return end
 
@@ -265,12 +283,15 @@ function handleKeyframeSelection(kfInfo, forceShift)
 	if not isShiftDown or state.currentSelection.type ~= "Keyframe" then
 		for _, selectedInfo in ipairs(state.currentSelection.data) do
 			if selectedInfo.marker ~= keyframeMarker and selectedInfo.marker and selectedInfo.marker.Parent then
-				local prevPropData = state.animationData[selectedInfo.object].Properties[selectedInfo.property]
-				if prevPropData then
-					local prevTargetTrack = selectedInfo.component and prevPropData.Components[selectedInfo.component] or prevPropData
-					if prevTargetTrack and prevTargetTrack.keyframes[selectedInfo.frame] then
-						local prevKeyframeData = prevTargetTrack.keyframes[selectedInfo.frame]
-						selectedInfo.marker.BackgroundColor3 = if prevKeyframeData.Easing == "Linear" then Config.Colors.KeyframeLinear else Config.Colors.KeyframeEased
+				local objectUID = selectedInfo.object:GetAttribute("SuperiorAnimator_UID")
+				if objectUID and state.animationData[objectUID] then
+					local prevPropData = state.animationData[objectUID].Properties[selectedInfo.property]
+					if prevPropData then
+						local prevTargetTrack = selectedInfo.component and prevPropData.Components[selectedInfo.component] or prevPropData
+						if prevTargetTrack and prevTargetTrack.keyframes[selectedInfo.frame] then
+							local prevKeyframeData = prevTargetTrack.keyframes[selectedInfo.frame]
+							selectedInfo.marker.BackgroundColor3 = if prevKeyframeData.Easing == "Linear" then Config.Colors.KeyframeLinear else Config.Colors.KeyframeEased
+						end
 					end
 				end
 			end
@@ -290,7 +311,9 @@ function handleKeyframeSelection(kfInfo, forceShift)
 
 	if isShiftDown and alreadySelected then
 		local selectedInfo = state.currentSelection.data[selectionIndex]
-		local prevPropData = state.animationData[selectedInfo.object].Properties[selectedInfo.property]
+		local objectUID = selectedInfo.object:GetAttribute("SuperiorAnimator_UID")
+		if not (objectUID and state.animationData[objectUID]) then return end
+		local prevPropData = state.animationData[objectUID].Properties[selectedInfo.property]
 		local prevTargetTrack = selectedInfo.component and prevPropData.Components[selectedInfo.component] or prevPropData
 		local prevKeyframeData = prevTargetTrack.keyframes[selectedInfo.frame]
 		selectedInfo.marker.BackgroundColor3 = if prevKeyframeData.Easing == "Linear" then Config.Colors.KeyframeLinear else Config.Colors.KeyframeEased
@@ -302,7 +325,9 @@ function handleKeyframeSelection(kfInfo, forceShift)
 
 	if #state.currentSelection.data == 1 then
 		local info = state.currentSelection.data[1]
-		local data = state.animationData[info.object].Properties[info.property]
+		local objectUID = info.object:GetAttribute("SuperiorAnimator_UID")
+		if not (objectUID and state.animationData[objectUID]) then return end
+		local data = state.animationData[objectUID].Properties[info.property]
 		local track = info.component and data.Components[info.component] or data
 		updatePropertyDisplay(track.keyframes[info.frame], info.component or info.property, nil)
 	else
@@ -356,7 +381,9 @@ function updateKeyframeValue(newValue, componentType, axis)
 		kfInfo = state.currentSelection.data[1]
 	elseif state.currentSelection.type == "Event" and #state.currentSelection.data == 1 then
 		local eventInfo = state.currentSelection.data[1]
-		local eventTrack = state.animationData[eventInfo.object].Events
+		local objectUID = eventInfo.object:GetAttribute("SuperiorAnimator_UID")
+		if not objectUID then return end
+		local eventTrack = state.animationData[objectUID].Events
 		local eventData = eventTrack.keyframes[eventInfo.frame]
 		if not eventData then return end
 
@@ -366,11 +393,11 @@ function updateKeyframeValue(newValue, componentType, axis)
 
 		local action = {
 			redo = function()
-				state.animationData[eventInfo.object].Events.keyframes[eventInfo.frame].Name = newName
+				state.animationData[objectUID].Events.keyframes[eventInfo.frame].Name = newName
 				updatePropertyDisplay(nil, nil, { Name = newName })
 			end,
 			undo = function()
-				state.animationData[eventInfo.object].Events.keyframes[eventInfo.frame].Name = oldName
+				state.animationData[objectUID].Events.keyframes[eventInfo.frame].Name = oldName
 				updatePropertyDisplay(nil, nil, { Name = oldName })
 			end
 		}
@@ -389,7 +416,10 @@ function updateKeyframeValue(newValue, componentType, axis)
 		val = newValue
 	end
 
-	local propData = state.animationData[kfInfo.object].Properties[kfInfo.property]
+	local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
+	if not objectUID then return end
+
+	local propData = state.animationData[objectUID].Properties[kfInfo.property]
 	if not propData then return end
 
 	local keyframe = propData.keyframes[kfInfo.frame]
@@ -451,13 +481,17 @@ function updateKeyframeValue(newValue, componentType, axis)
 
 	local action = {
 		redo = function()
-			local kf = state.animationData[kfInfo.object].Properties[kfInfo.property].keyframes[kfInfo.frame]
+			local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
+			if not (objectUID and state.animationData[objectUID]) then return end
+			local kf = state.animationData[objectUID].Properties[kfInfo.property].keyframes[kfInfo.frame]
 			kf.Value = finalNewValue
 			updatePropertyDisplay(kf, kfInfo.component or kfInfo.property)
 			timeline:setCurrentFrame(timeline.currentFrame) -- Force update
 		end,
 		undo = function()
-			local kf = state.animationData[kfInfo.object].Properties[kfInfo.property].keyframes[kfInfo.frame]
+			local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
+			if not (objectUID and state.animationData[objectUID]) then return end
+			local kf = state.animationData[objectUID].Properties[kfInfo.property].keyframes[kfInfo.frame]
 			kf.Value = oldValue
 			updatePropertyDisplay(kf, kfInfo.component or kfInfo.property, nil)
 			timeline:setCurrentFrame(timeline.currentFrame) -- Force update
@@ -468,14 +502,23 @@ function updateKeyframeValue(newValue, componentType, axis)
 end
 
 function deleteTrack(object, propName)
-	local objectData = state.animationData[object]
+	local objectUID
+	if object:IsA("Camera") then
+		objectUID = "SuperiorAnimator_Camera"
+	else
+		objectUID = object:GetAttribute("SuperiorAnimator_UID")
+	end
+
+	if not objectUID then return end
+
+	local objectData = state.animationData[objectUID]
 	if not objectData then return end
 
 	local trackDataToSave = {}
 	local isFullObjectDeletion = not propName
 
 	if isFullObjectDeletion then
-		trackDataToSave = state.animationData[object]
+		trackDataToSave = state.animationData[objectUID]
 	elseif objectData.Properties[propName] and propName ~= "CFrame" then
 		trackDataToSave[propName] = objectData.Properties[propName]
 	else
@@ -484,7 +527,7 @@ function deleteTrack(object, propName)
 
 	local action = {
 		redo = function()
-			local objData = state.animationData[object]
+			local objData = state.animationData[objectUID]
 			if not objData then return end
 
 			if isFullObjectDeletion then
@@ -500,7 +543,7 @@ function deleteTrack(object, propName)
 				objData.trackFrame:Destroy()
 				objData.keyframeContainer:Destroy()
 				disconnectAutoKeyListener(object)
-				state.animationData[object] = nil
+				state.animationData[objectUID] = nil
 			else
 				local subTrackUi = objData.subTrackFrames[propName]
 				if subTrackUi then
@@ -518,7 +561,7 @@ function deleteTrack(object, propName)
 		end,
 		undo = function()
 			if isFullObjectDeletion then
-				state.animationData[object] = trackDataToSave
+				state.animationData[objectUID] = trackDataToSave
 				createTrackForObject(object, false)
 				for name, propData in pairs(trackDataToSave.Properties) do
 					if name ~= "CFrame" then
@@ -533,7 +576,7 @@ function deleteTrack(object, propName)
 				end
 				connectAutoKeyListener(object)
 			else
-				local objData = state.animationData[object]
+				local objData = state.animationData[objectUID]
 				objData.Properties[propName] = trackDataToSave[propName]
 				createTrackForObject(object, true, propName)
 				for frame, _ in pairs(trackDataToSave[propName].keyframes) do
@@ -564,12 +607,27 @@ function clearTimeline()
 	updateScrubberFromTimeline()
 end
 
-function createTrackForObject(object, isSubTrack, propName)
-	if not isSubTrack and state.animationData[object] then return end
+function createTrackForObject(object, isSubTrack, propName, uid)
+	-- Gunakan UID sebagai kunci utama untuk pengecekan
+	if not isSubTrack and uid and state.animationData[uid] then return end
+
+	-- Dapatkan UID jika belum ada
+	local objectUID = uid
+	if object:IsA("Camera") then
+		objectUID = "SuperiorAnimator_Camera"
+	else
+		objectUID = objectUID or object:GetAttribute("SuperiorAnimator_UID")
+		if not objectUID then
+			objectUID = HttpService:GenerateGUID(false)
+			object:SetAttribute("SuperiorAnimator_UID", objectUID)
+		end
+	end
 
 	if not isSubTrack then
-		print("Membuat track untuk: " .. object.Name)
-		state.animationData[object] = {
+		print("Membuat track untuk: " .. object.Name .. " (UID: " .. objectUID .. ")")
+		state.animationData[objectUID] = {
+			object = object, -- Simpan referensi objek
+			uid = objectUID,    -- Simpan UID
 			Properties = {
 				CFrame = { keyframes = {}, markers = {} }
 			},
@@ -699,10 +757,10 @@ function createTrackForObject(object, isSubTrack, propName)
 						propButton.Parent = ui.propMenu.list
 
 						propButton.MouseButton1Click:Connect(function()
-							if object and not state.animationData[object].Properties[propName] then
+							if object and not state.animationData[objectUID].Properties[propName] then
 								local action = {
 									redo = function()
-										state.animationData[object].Properties[propName] = { 
+										state.animationData[objectUID].Properties[propName] = {
 											keyframes = {}, 
 											markers = {},
 											Components = {},
@@ -735,7 +793,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		end)
 	else
 		local expandableTypes = {Vector3 = {"X", "Y", "Z"}, Color3 = {"R", "G", "B"}, UDim2 = {"XScale", "XOffset", "YScale", "YOffset"}}
-		local propData = state.animationData[object] and state.animationData[object].Properties[propName]
+		local propData = state.animationData[objectUID] and state.animationData[objectUID].Properties[propName]
 		local isExpandable = propData and expandableTypes[propData.ValueType]
 
 		if isExpandable then
@@ -817,7 +875,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		eventKeyframeTrack.LayoutOrder = keyframeTrack.LayoutOrder + 1
 		eventKeyframeTrack.Parent = ui.keyframeTracksContainer
 
-		state.animationData[object].eventTrackUI = {
+		state.animationData[objectUID].eventTrackUI = {
 			label = eventTrackLabel,
 			keyframes = eventKeyframeTrack
 		}
@@ -883,13 +941,13 @@ function createTrackForObject(object, isSubTrack, propName)
 	end)
 
 	if isSubTrack then
-		state.animationData[object].subTrackFrames[propName] = {label = trackLabelHolder, keyframes = keyframeTrack}
-		local mainTrackOrder = state.animationData[object].trackFrame.LayoutOrder
-		trackLabelHolder.LayoutOrder = mainTrackOrder + #state.animationData[object].subTrackFrames
+		state.animationData[objectUID].subTrackFrames[propName] = {label = trackLabelHolder, keyframes = keyframeTrack}
+		local mainTrackOrder = state.animationData[objectUID].trackFrame.LayoutOrder
+		trackLabelHolder.LayoutOrder = mainTrackOrder + #state.animationData[objectUID].subTrackFrames
 		keyframeTrack.LayoutOrder = trackLabelHolder.LayoutOrder
 	else
-		state.animationData[object].trackFrame = trackLabelHolder
-		state.animationData[object].keyframeContainer = keyframeTrack
+		state.animationData[objectUID].trackFrame = trackLabelHolder
+		state.animationData[objectUID].keyframeContainer = keyframeTrack
 		trackLabelHolder.LayoutOrder = (#ui.trackListFrame:GetChildren() - 1) * 10
 		keyframeTrack.LayoutOrder = trackLabelHolder.LayoutOrder
 	end
@@ -899,8 +957,14 @@ end
 
 -- Hanya menambahkan data keyframe ke tabel animationData
 function addKeyframeData(object, mainPropName, frame, value, easing, componentName)
-	local objectData = state.animationData[object]
+	local objectUID = object:GetAttribute("SuperiorAnimator_UID")
+	if not objectUID then return nil, nil end
+
+	local objectData = state.animationData[objectUID]
+	if not objectData then return nil, nil end
+
 	local propData = objectData.Properties[mainPropName]
+	if not propData then return nil, nil end
 
 	local targetTrack
 	if componentName then
@@ -923,8 +987,14 @@ function addKeyframeData(object, mainPropName, frame, value, easing, componentNa
 end
 
 function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
-	local objectData = state.animationData[object]
+	local objectUID = object:GetAttribute("SuperiorAnimator_UID")
+	if not objectUID then return nil end
+
+	local objectData = state.animationData[objectUID]
+	if not objectData then return nil end
+
 	local propData = objectData.Properties[mainPropName]
+	if not propData then return nil end
 
 	local targetTrack, container
 	if componentName then
@@ -994,7 +1064,9 @@ function createKeyframeMarkerUI(object, mainPropName, frame, componentName)
 			local keyframeTarget = { object = object, frame = frame, property = mainPropName, component = componentName, marker = keyframeMarker }
 			local options = {
 				{ Text = "Hapus Keyframe", Callback = function(target)
-					local propData = state.animationData[target.object].Properties[target.property]
+					local objectUID = target.object:GetAttribute("SuperiorAnimator_UID")
+					if not objectUID then return end
+					local propData = state.animationData[objectUID].Properties[target.property]
 					local targetTrack = target.component and propData.Components[target.component] or propData
 					targetTrack.keyframes[target.frame] = nil
 					targetTrack.markers[target.frame] = nil
@@ -1020,6 +1092,7 @@ end
 function updateTimelineRuler()
 	local maxFrame = 100
 	for _, objectData in pairs(state.animationData) do
+		if not objectData.Properties then continue end
 		for _, propTrack in pairs(objectData.Properties) do
 			for frame, _ in pairs(propTrack.keyframes) do
 				if frame > maxFrame then
@@ -1179,6 +1252,21 @@ end
 function onHeartbeat(deltaTime)
 	timeline:update(deltaTime * state.playbackSpeed)
 	updateScrubberFromTimeline()
+
+	-- Handle camera animation
+	local cameraUID = "SuperiorAnimator_Camera"
+	if state.animationData[cameraUID] and timeline.isPlaying then
+		local camera = workspace.CurrentCamera
+		if not state.originalCameraType then
+			state.originalCameraType = camera.CameraType
+		end
+		camera.CameraType = Enum.CameraType.Scriptable
+
+		local animatedCFrame = timeline:getValueAtFrame("SuperiorAnimator_Camera", "CFrame", timeline.currentFrame)
+		if animatedCFrame then
+			camera.CFrame = animatedCFrame
+		end
+	end
 end
 
 function updateSelectedObjectLabel()
@@ -1242,6 +1330,7 @@ local function redrawTimeline()
 
 	local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
 	for _, objectData in pairs(state.animationData) do
+		if not objectData.Properties then continue end
 		for _, propData in pairs(objectData.Properties) do
 			local function reposition(track)
 				if not track or not track.markers then return end
@@ -1288,7 +1377,8 @@ local Serialization = require(script.src.Serialization)
 
 ui.saveDialog.confirmButton.MouseButton1Click:Connect(function()
 	local animName = ui.saveDialog.nameBox.Text
-	if Serialization.save(state.animationData, animName) then
+	-- Loloskan HttpService ke fungsi save
+	if Serialization.save(state.animationData, animName, HttpService) then
 		ui.saveDialog.gui.Enabled = false
 		showNotification("Sukses", "Animasi '" .. animName .. "' berhasil disimpan!")
 	end
@@ -1306,10 +1396,11 @@ ui.loadButton.MouseButton1Click:Connect(function()
 	local savesFolder = ReplicatedStorage:FindFirstChild("SuperiorAnimator_Saves")
 	if not savesFolder then return end
 
-	for _, animModule in ipairs(savesFolder:GetChildren()) do
-		if animModule:IsA("ModuleScript") then
+	for _, animSave in ipairs(savesFolder:GetChildren()) do
+		-- Ubah untuk mencari StringValue
+		if animSave:IsA("StringValue") then
 			local itemFrame = Instance.new("Frame")
-			itemFrame.Name = animModule.Name .. "_Item"
+			itemFrame.Name = animSave.Name .. "_Item"
 			itemFrame.Size = UDim2.new(1, 0, 0, 30)
 			itemFrame.BackgroundTransparency = 1
 			itemFrame.Parent = ui.loadDialog.list
@@ -1325,8 +1416,8 @@ ui.loadButton.MouseButton1Click:Connect(function()
 			deleteButton.Parent = itemFrame
 
 			local animButton = Instance.new("TextButton")
-			animButton.Name = animModule.Name
-			animButton.Text = animModule.Name
+			animButton.Name = animSave.Name
+			animButton.Text = animSave.Name
 			animButton.Size = UDim2.new(1, -30, 1, 0)
 			animButton.BackgroundColor3 = Color3.fromRGB(60,60,60)
 			animButton.TextColor3 = Color3.fromRGB(220,220,220)
@@ -1337,11 +1428,11 @@ ui.loadButton.MouseButton1Click:Connect(function()
 			deleteButton.MouseButton1Click:Connect(function()
 				showConfirmation(
 					"Hapus Animasi",
-					"Apakah Anda yakin ingin menghapus animasi '" .. animModule.Name .. "' secara permanen?",
+					"Apakah Anda yakin ingin menghapus animasi '" .. animSave.Name .. "' secara permanen?",
 					function()
-						animModule:Destroy()
+						animSave:Destroy()
 						itemFrame:Destroy()
-						print("Animasi '" .. animModule.Name .. "' telah dihapus.")
+						print("Animasi '" .. animSave.Name .. "' telah dihapus.")
 					end
 				)
 			end)
@@ -1350,30 +1441,51 @@ ui.loadButton.MouseButton1Click:Connect(function()
 				local function doLoad()
 					clearTimeline()
 
-					local success, loadedData = pcall(require, animModule)
+					local success, decodedData = pcall(HttpService.JSONDecode, HttpService, animSave.Value)
 					if not success then
-						warn("Gagal memuat data animasi:", loadedData)
+						warn("Gagal mendekode data animasi:", decodedData)
 						showNotification("Error", "Gagal memuat file animasi. Lihat konsol output untuk detailnya.")
 						return
 					end
 
-					local missingObjects = {}
+					local missingObjectsInfo = {}
 
-					for path, data in pairs(loadedData.Objects) do
-						local object = workspace:FindFirstChild(path, true)
+					-- 1. Buat peta semua objek yang dapat dianimasikan di workspace
+					local uidToObjectMap = {}
+					for _, descendant in ipairs(workspace:GetDescendants()) do
+						local uid = descendant:GetAttribute("SuperiorAnimator_UID")
+						if uid then
+							uidToObjectMap[uid] = descendant
+						end
+					end
+
+					-- 2. Iterasi melalui data yang dimuat dan tautkan kembali
+					for uid, data in pairs(decodedData.Objects) do
+						local object
+						if uid == "SuperiorAnimator_Camera" then
+							object = workspace.CurrentCamera
+						else
+							object = uidToObjectMap[uid]
+						end
+
 						if object then
-							createTrackForObject(object, false)
+							-- Objek ditemukan, buat kembali tracknya
+							createTrackForObject(object, false, nil, uid)
 
+							-- Buat ulang semua sub-track properti terlebih dahulu
 							for propName, propTrackData in pairs(data.Properties) do
 								if propName ~= "CFrame" then
-									state.animationData[object].Properties[propName] = {
+									state.animationData[uid].Properties[propName] = {
 										keyframes = {}, markers = {},
 										Components = {}, ComponentTracks = {}, IsExpanded = false,
-										ValueType = propTrackData.ValueType
+										ValueType = propTrackData.ValueType or typeof(object[propName]) -- Fallback
 									}
 									createTrackForObject(object, true, propName)
 								end
+							end
 
+							-- Sekarang, isi keyframe-nya
+							for propName, propTrackData in pairs(data.Properties) do
 								if propTrackData.Keyframes then
 									for frameStr, keyframeData in pairs(propTrackData.Keyframes) do
 										local frame = tonumber(frameStr)
@@ -1388,6 +1500,7 @@ ui.loadButton.MouseButton1Click:Connect(function()
 										end
 										if value then
 											addKeyframeData(object, propName, frame, value, keyframeData.Easing, nil)
+											createKeyframeMarkerUI(object, propName, frame, nil)
 										end
 									end
 								end
@@ -1398,20 +1511,23 @@ ui.loadButton.MouseButton1Click:Connect(function()
 											local frame = tonumber(frameStr)
 											local value = keyframeData.Value.val
 											addKeyframeData(object, propName, frame, value, keyframeData.Easing, compName)
+											createKeyframeMarkerUI(object, propName, frame, compName)
 										end
 									end
 								end
 							end
 						else
-							table.insert(missingObjects, path)
+							-- Objek tidak ditemukan
+							table.insert(missingObjectsInfo, "- " .. (data.Name or "Tanpa Nama") .. " (UID: " .. uid .. ")")
 						end
 					end
 
 					updateCanvasSize()
+					updateTimelineRuler()
 					ui.loadDialog.gui.Enabled = false
 
-					if #missingObjects > 0 then
-						local message = "Gagal memuat trek untuk objek berikut karena tidak dapat ditemukan:\n\n" .. table.concat(missingObjects, "\n")
+					if #missingObjectsInfo > 0 then
+						local message = "Gagal memuat trek untuk objek berikut karena tidak dapat ditemukan di workspace:\n\n" .. table.concat(missingObjectsInfo, "\n")
 						showNotification("Peringatan Pemuatan", message)
 					end
 				end
@@ -1479,8 +1595,8 @@ ui.autoKeyButton.MouseButton1Click:Connect(function()
 	if state.isAutoKeyingEnabled then
 		ui.autoKeyButton.BackgroundColor3 = Config.Colors.ButtonPrimary
 		ui.autoKeyButton.Text = "Auto: On"
-		for object, _ in pairs(state.animationData) do
-			connectAutoKeyListener(object)
+		for _, data in pairs(state.animationData) do
+			connectAutoKeyListener(data.object)
 		end
 	else
 		ui.autoKeyButton.BackgroundColor3 = Config.Colors.ButtonSecondary
@@ -1541,7 +1657,9 @@ ui.keyframeAreaFrame.InputBegan:Connect(function(input)
 
 		for _, selectedInfo in ipairs(state.currentSelection.data) do
 			if selectedInfo.marker and selectedInfo.marker.Parent then
-				local prevPropData = state.animationData[selectedInfo.object].Properties[selectedInfo.property]
+				local objectUID = selectedInfo.object:GetAttribute("SuperiorAnimator_UID")
+				if not (objectUID and state.animationData[objectUID]) then continue end
+				local prevPropData = state.animationData[objectUID].Properties[selectedInfo.property]
 				if prevPropData then
 					local prevKeyframeData = (selectedInfo.component and prevPropData.Components[selectedInfo.component] or prevPropData).keyframes[selectedInfo.frame]
 					if prevKeyframeData then
@@ -1603,15 +1721,18 @@ inputService.InputChanged:Connect(function(input)
 			end
 		end
 
-		for obj, objData in pairs(state.animationData) do
-			for propName, propData in pairs(objData.Properties) do
-				for frame, marker in pairs(propData.markers) do
-					checkIntersection({ object = obj, frame = frame, property = propName, marker = marker, component = nil }, marker)
-				end
-				if propData.Components then
-					for compName, compData in pairs(propData.Components) do
-						for frame, marker in pairs(compData.markers) do
-							checkIntersection({ object = obj, frame = frame, property = propName, marker = marker, component = compName }, marker)
+		for _, objData in pairs(state.animationData) do
+			local obj = objData.object
+			if obj then
+				for propName, propData in pairs(objData.Properties) do
+					for frame, marker in pairs(propData.markers) do
+						checkIntersection({ object = obj, frame = frame, property = propName, marker = marker, component = nil }, marker)
+					end
+					if propData.Components then
+						for compName, compData in pairs(propData.Components) do
+							for frame, marker in pairs(compData.markers) do
+								checkIntersection({ object = obj, frame = frame, property = propName, marker = marker, component = compName }, marker)
+							end
 						end
 					end
 				end
@@ -1667,85 +1788,117 @@ inputService.InputEnded:Connect(function(input)
 
 			for _, kfDragInfo in ipairs(state.draggingKeyframeInfo.selection) do
 				local newFrame = math.floor(kfDragInfo.marker.Position.X.Offset / pixelsPerFrame)
+				local objectUID = kfDragInfo.object:GetAttribute("SuperiorAnimator_UID")
 
-				if newFrame ~= kfDragInfo.originalFrame then
-					local propData = state.animationData[kfDragInfo.object].Properties[kfDragInfo.property]
-					local targetTrack = kfDragInfo.component and propData.Components[kfDragInfo.component] or propData
-
-					table.insert(updates, {
-						info = kfDragInfo,
-						newFrame = newFrame,
-						keyframeData = targetTrack.keyframes[kfDragInfo.originalFrame]
-					})
+				if newFrame ~= kfDragInfo.originalFrame and objectUID and state.animationData[objectUID] then
+					local propData = state.animationData[objectUID].Properties[kfDragInfo.property]
+					if propData then
+						local targetTrack = kfDragInfo.component and propData.Components[kfDragInfo.component] or propData
+						if targetTrack and targetTrack.keyframes[kfDragInfo.originalFrame] then
+							table.insert(updates, {
+								info = kfDragInfo,
+								newFrame = newFrame,
+								keyframeData = targetTrack.keyframes[kfDragInfo.originalFrame]
+							})
+						end
+					end
 				else
 					kfDragInfo.marker.Position = UDim2.new(0, kfDragInfo.originalFrame * pixelsPerFrame, 0, kfDragInfo.marker.Position.Y.Offset)
 				end
 			end
 
-			for _, update in ipairs(updates) do
-				local kfInfo = update.info
-				local propData = state.animationData[kfInfo.object].Properties[kfInfo.property]
-				local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
-				targetTrack.keyframes[kfInfo.originalFrame] = nil
-				targetTrack.markers[kfInfo.originalFrame] = nil
+			if #updates == 0 then
+				state.draggingKeyframeInfo = nil
+				return
 			end
 
 			local action = {
 				redo = function()
-					for _, update in ipairs(updates) do
-						local kfInfo = update.info
-						local propData = state.animationData[kfInfo.object].Properties[kfInfo.property]
-						local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
-						targetTrack.keyframes[kfInfo.originalFrame] = nil
-						targetTrack.markers[kfInfo.originalFrame] = nil
-					end
+					local newSelectionData = {}
 
 					for _, update in ipairs(updates) do
 						local kfInfo = update.info
-						local newFrame = update.newFrame
-						local propData = state.animationData[kfInfo.object].Properties[kfInfo.property]
-						local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
-
-						targetTrack.keyframes[newFrame] = update.keyframeData
-						targetTrack.markers[newFrame] = kfInfo.marker
-						kfInfo.marker.Position = UDim2.new(0, newFrame * pixelsPerFrame, 0, kfInfo.marker.Position.Y.Offset)
-
-						for _, selected in ipairs(state.currentSelection.data) do
-							if selected.marker == kfInfo.marker then
-								selected.frame = newFrame
-								break
+						local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
+						if objectUID and state.animationData[objectUID] then
+							local propData = state.animationData[objectUID].Properties[kfInfo.property]
+							if propData then
+								local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
+								if targetTrack then
+									targetTrack.keyframes[kfInfo.originalFrame] = nil
+									targetTrack.markers[kfInfo.originalFrame] = nil
+								end
 							end
 						end
 					end
-					updateTimelineRuler()
-				end,
-				undo = function()
+
 					for _, update in ipairs(updates) do
 						local kfInfo = update.info
 						local newFrame = update.newFrame
-						local propData = state.animationData[kfInfo.object].Properties[kfInfo.property]
-						local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
-						targetTrack.keyframes[newFrame] = nil
-						targetTrack.markers[newFrame] = nil
+						local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
+
+						if objectUID and state.animationData[objectUID] then
+							local propData = state.animationData[objectUID].Properties[kfInfo.property]
+							if propData then
+								local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
+								if targetTrack then
+									targetTrack.keyframes[newFrame] = update.keyframeData
+									targetTrack.markers[newFrame] = kfInfo.marker
+									kfInfo.marker.Position = UDim2.new(0, newFrame * pixelsPerFrame, 0, kfInfo.marker.Position.Y.Offset)
+
+									local newKfInfo = {
+										object = kfInfo.object, frame = newFrame, property = kfInfo.property,
+										component = kfInfo.component, marker = kfInfo.marker
+									}
+									table.insert(newSelectionData, newKfInfo)
+								end
+							end
+						end
+					end
+					state.currentSelection.data = newSelectionData
+					updateTimelineRuler()
+				end,
+				undo = function()
+					local oldSelectionData = {}
+					for _, update in ipairs(updates) do
+						local kfInfo = update.info
+						local newFrame = update.newFrame
+						local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
+						if objectUID and state.animationData[objectUID] then
+							local propData = state.animationData[objectUID].Properties[kfInfo.property]
+							if propData then
+								local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
+								if targetTrack then
+									targetTrack.keyframes[newFrame] = nil
+									targetTrack.markers[newFrame] = nil
+								end
+							end
+						end
 					end
 
 					for _, update in ipairs(updates) do
 						local kfInfo = update.info
 						local originalFrame = kfInfo.originalFrame
-						local propData = state.animationData[kfInfo.object].Properties[kfInfo.property]
-						local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
+						local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
 
-						targetTrack.keyframes[originalFrame] = update.keyframeData
-						targetTrack.markers[originalFrame] = kfInfo.marker
-						kfInfo.marker.Position = UDim2.new(0, originalFrame * pixelsPerFrame, 0, kfInfo.marker.Position.Y.Offset)
+						if objectUID and state.animationData[objectUID] then
+							local propData = state.animationData[objectUID].Properties[kfInfo.property]
+							if propData then
+								local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
+								if targetTrack then
+									targetTrack.keyframes[originalFrame] = update.keyframeData
+									targetTrack.markers[originalFrame] = kfInfo.marker
+									kfInfo.marker.Position = UDim2.new(0, originalFrame * pixelsPerFrame, 0, kfInfo.marker.Position.Y.Offset)
 
-						for _, selected in ipairs(state.currentSelection.data) do
-							if selected.marker == kfInfo.marker then
-								selected.frame = originalFrame
-								break
+									local oldKfInfo = {
+										object = kfInfo.object, frame = originalFrame, property = kfInfo.property,
+										component = kfInfo.component, marker = kfInfo.marker
+									}
+									table.insert(oldSelectionData, oldKfInfo)
+								end
 							end
 						end
 					end
+					state.currentSelection.data = oldSelectionData
 					updateTimelineRuler()
 				end
 			}
@@ -1759,18 +1912,163 @@ end)
 
 ui.addObjectButton.MouseButton1Click:Connect(function()
 	local selectedObjects = selection:Get()
-	if #selectedObjects == 0 then return end
+	if #selectedObjects == 0 then
+		showNotification("Peringatan", "Silakan pilih objek di workspace terlebih dahulu.")
+		return
+	end
+
 	local objectToAdd = selectedObjects[1]
-	if state.animationData[objectToAdd] then return end
+
+	-- Periksa apakah objek sudah ada dalam data animasi
+	for _, data in pairs(state.animationData) do
+		if data.object == objectToAdd then
+			showNotification("Info", "Objek '" .. objectToAdd.Name .. "' sudah ada di timeline.")
+			return
+		end
+	end
+
+	local objectUID = objectToAdd:GetAttribute("SuperiorAnimator_UID")
+	if not objectUID then
+		objectUID = HttpService:GenerateGUID(false)
+		objectToAdd:SetAttribute("SuperiorAnimator_UID", objectUID)
+	end
+
+	-- Gunakan UID sebagai kunci utama untuk mencegah duplikasi
+	if state.animationData[objectUID] then return end
 
 	local action = {
 		redo = function()
-			createTrackForObject(objectToAdd, false)
+			-- Loloskan UID ke fungsi createTrack
+			createTrackForObject(objectToAdd, false, nil, objectUID)
 			updateCanvasSize()
 			updateSelectedObjectLabel()
 		end,
 		undo = function()
 			deleteTrack(objectToAdd, nil)
+		end
+	}
+	ActionHistory:register(action)
+	action.redo()
+end)
+
+local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
+	local mainPropName, componentName = fullPropName:match("([^.]+)%.([^.]+)")
+	mainPropName = mainPropName or fullPropName
+
+	local objectUID
+	if selectedObject:IsA("Camera") then
+		objectUID = "SuperiorAnimator_Camera"
+	else
+		objectUID = selectedObject:GetAttribute("SuperiorAnimator_UID")
+	end
+
+	if not (objectUID and state.animationData[objectUID]) then return end
+
+	local propData = state.animationData[objectUID].Properties[mainPropName]
+	if not propData then return end
+
+	-- We need this for the undo function, so we define it here
+	local expandableTypes = {Vector3 = {"X", "Y", "Z"}, Color3 = {"R", "G", "B"}, UDim2 = {"XScale", "XOffset", "YScale", "YOffset"}}
+
+	local action = {
+		info = "Add Keyframe(s)",
+		redo = function()
+			if componentName then
+				if not propData.Components[componentName] then
+					propData.Components[componentName] = { keyframes = {}, markers = {} }
+				end
+				local compTrack = propData.Components[componentName]
+				if compTrack.keyframes[currentFrame] then return end
+
+				local currentValue = selectedObject[mainPropName]
+				local componentValue
+				if propData.ValueType == "UDim2" then
+					local udimComp = componentName:match("([XY])(Scale|Offset)")
+					componentValue = currentValue[udimComp:sub(1,1)][udimComp:sub(2)]
+				else
+					componentValue = currentValue[componentName]
+				end
+
+				addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", componentName)
+				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, componentName)
+			elseif propData.IsExpanded then
+				local components = expandableTypes[propData.ValueType]
+				local currentValue = selectedObject[mainPropName]
+
+				for _, compName in ipairs(components) do
+					if not propData.Components[compName] then
+						propData.Components[compName] = { keyframes = {}, markers = {} }
+					end
+					local compTrack = propData.Components[compName]
+					if compTrack.keyframes and compTrack.keyframes[currentFrame] then continue end
+
+					local componentValue
+					if propData.ValueType == "UDim2" then
+						local udimComp = compName:match("([XY])(Scale|Offset)")
+						componentValue = currentValue[udimComp:sub(1,1)][udimComp:sub(2)]
+					else
+						componentValue = currentValue[compName]
+					end
+					addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", compName)
+					createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, compName)
+				end
+			else
+				if propData.keyframes[currentFrame] then return end
+				addKeyframeData(selectedObject, mainPropName, currentFrame, selectedObject[mainPropName], "Linear", nil)
+				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, nil)
+			end
+			updateTimelineRuler()
+		end,
+		undo = function()
+			local objectUID = selectedObject:GetAttribute("SuperiorAnimator_UID")
+			if not objectUID then return end
+
+			local function removeKeyframe(uid, prop, frame, comp)
+				local pData = state.animationData[uid].Properties[prop]
+				if not pData then return end
+				local track = comp and pData.Components[comp] or pData
+				if track and track.markers and track.markers[frame] then
+					track.markers[frame]:Destroy()
+					track.markers[frame] = nil
+					track.keyframes[frame] = nil
+				end
+			end
+
+			if componentName then
+				removeKeyframe(objectUID, mainPropName, currentFrame, componentName)
+			elseif propData.IsExpanded then
+				local components = expandableTypes[propData.ValueType]
+				for _, compName in ipairs(components) do
+					removeKeyframe(objectUID, mainPropName, currentFrame, compName)
+				end
+			else
+				removeKeyframe(objectUID, mainPropName, currentFrame, nil)
+			end
+			updateTimelineRuler()
+		end
+	}
+	ActionHistory:register(action)
+	action.redo()
+end
+
+ui.addCameraButton.MouseButton1Click:Connect(function()
+	local cameraUID = "SuperiorAnimator_Camera"
+
+	if state.animationData[cameraUID] then
+		showNotification("Info", "Track kamera sudah ada di timeline.")
+		return
+	end
+
+	local camera = workspace.CurrentCamera
+	-- Kita tidak bisa menyetel atribut pada kamera, jadi kita akan menanganinya secara khusus
+
+	local action = {
+		redo = function()
+			createTrackForObject(camera, false, nil, cameraUID)
+			updateCanvasSize()
+		end,
+		undo = function()
+			deleteTrack(camera, nil) -- Ini mungkin perlu penyesuaian
 		end
 	}
 	ActionHistory:register(action)
@@ -1790,105 +2088,7 @@ ui.addKeyframeButton.MouseButton1Click:Connect(function()
 	local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
 	local currentFrame = math.floor(playheadX / pixelsPerFrame)
 
-	local mainPropName, componentName = fullPropName:match("([^.]+)%.([^.]+)")
-	mainPropName = mainPropName or fullPropName
-
-	local propData = state.animationData[selectedObject].Properties[mainPropName]
-	if not propData then return end
-
-	local expandableTypes = {Vector3 = {"X", "Y", "Z"}, Color3 = {"R", "G", "B"}, UDim2 = {"XScale", "XOffset", "YScale", "YOffset"}}
-
-	if componentName then
-		if not propData.Components[componentName] then
-			propData.Components[componentName] = { keyframes = {}, markers = {} }
-		end
-		local compTrack = propData.Components[componentName]
-		if compTrack.keyframes[currentFrame] then return end
-
-		local currentValue = selectedObject[mainPropName]
-		local componentValue
-		if propData.ValueType == "UDim2" then
-			local udimComp = componentName:match("([XY])(Scale|Offset)")
-			componentValue = currentValue[udimComp:sub(1,1)][udimComp:sub(2)]
-		else
-			componentValue = currentValue[componentName]
-		end
-
-		addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", componentName)
-		createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, componentName)
-
-	else
-		if propData.IsExpanded then
-			local components = expandableTypes[propData.ValueType]
-			local currentValue = selectedObject[mainPropName]
-
-			for _, compName in ipairs(components) do
-				local compTrack = propData.Components[compName]
-				if compTrack and compTrack.keyframes[currentFrame] then continue end
-
-				local componentValue
-				if propData.ValueType == "UDim2" then
-					local udimComp = compName:match("([XY])(Scale|Offset)")
-					componentValue = currentValue[udimComp:sub(1,1)][udimComp:sub(2)]
-				else
-					componentValue = currentValue[compName]
-				end
-				addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", compName)
-				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, compName)
-			end
-		else
-			if propData.keyframes[currentFrame] then return end
-			addKeyframeData(selectedObject, mainPropName, currentFrame, selectedObject[mainPropName], "Linear", nil)
-			createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, nil)
-		end
-	end
-
-	local action = {
-		info = "Add Keyframe(s)",
-		redo = function()
-			if componentName then
-				addKeyframeData(selectedObject, mainPropName, currentFrame, selectedObject[mainPropName][componentName], "Linear", componentName)
-				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, componentName)
-			elseif propData.IsExpanded then
-				local components = expandableTypes[propData.ValueType]
-				local currentValue = selectedObject[mainPropName]
-				for _, compName in ipairs(components) do
-					local componentValue = (propData.ValueType == "UDim2") and currentValue[compName:sub(1,1)][compName:sub(2)] or currentValue[compName]
-					addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", compName)
-					createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, compName)
-				end
-			else
-				addKeyframeData(selectedObject, mainPropName, currentFrame, selectedObject[mainPropName], "Linear", nil)
-				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, nil)
-			end
-			updateTimelineRuler()
-		end,
-		undo = function()
-			local function removeKeyframe(obj, prop, frame, comp)
-				local pData = state.animationData[obj].Properties[prop]
-				local track = comp and pData.Components[comp] or pData
-				if track and track.markers[frame] then
-					track.markers[frame]:Destroy()
-					track.markers[frame] = nil
-					track.keyframes[frame] = nil
-				end
-			end
-
-			if componentName then
-				removeKeyframe(selectedObject, mainPropName, currentFrame, componentName)
-			elseif propData.IsExpanded then
-				local components = expandableTypes[propData.ValueType]
-				for _, compName in ipairs(components) do
-					removeKeyframe(selectedObject, mainPropName, currentFrame, compName)
-				end
-			else
-				removeKeyframe(selectedObject, mainPropName, currentFrame, nil)
-			end
-			updateTimelineRuler()
-		end
-	}
-	ActionHistory:register(action)
-	action.redo()
+	addKeyframeAction(selectedObject, fullPropName, currentFrame)
 end)
 
 selection.SelectionChanged:Connect(updateSelectedObjectLabel)
@@ -1915,6 +2115,10 @@ end)
 ui.stopButton.MouseButton1Click:Connect(function()
 	timeline:stop()
 	updateScrubberFromTimeline()
+	if state.originalCameraType then
+		workspace.CurrentCamera.CameraType = state.originalCameraType
+		state.originalCameraType = nil
+	end
 end)
 
 ui.easingButton.MouseButton1Click:Connect(function()
@@ -2010,8 +2214,10 @@ for _, category in ipairs(easingStyles) do
 		itemButton.MouseButton1Click:Connect(function()
 			if state.currentSelection.type ~= "Keyframe" or #state.currentSelection.data ~= 1 then return end
 			local kfInfo = state.currentSelection.data[1]
+			local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
+			if not objectUID then return end
 
-			local propTrack = state.animationData[kfInfo.object].Properties[kfInfo.property]
+			local propTrack = state.animationData[objectUID].Properties[kfInfo.property]
 			if not (propTrack and propTrack.keyframes[kfInfo.frame]) then return end
 
 			local keyframe = propTrack.keyframes[kfInfo.frame]
@@ -2022,7 +2228,7 @@ for _, category in ipairs(easingStyles) do
 
 			local action = {
 				redo = function()
-					local kf = state.animationData[kfInfo.object].Properties[kfInfo.property].keyframes[kfInfo.frame]
+					local kf = state.animationData[objectUID].Properties[kfInfo.property].keyframes[kfInfo.frame]
 					kf.Easing = newEasing
 					ui.easingButton.Text = "Easing: " .. newEasing
 					if kfInfo.marker then
@@ -2031,7 +2237,7 @@ for _, category in ipairs(easingStyles) do
 					ui.easingMenu.Visible = false
 				end,
 				undo = function()
-					local kf = state.animationData[kfInfo.object].Properties[kfInfo.property].keyframes[kfInfo.frame]
+					local kf = state.animationData[objectUID].Properties[kfInfo.property].keyframes[kfInfo.frame]
 					kf.Easing = oldEasing
 					ui.easingButton.Text = "Easing: " .. oldEasing
 					if kfInfo.marker then
@@ -2053,14 +2259,18 @@ local function deleteSelectedKeyframes()
 	local deletedData = {}
 	for _, selInfo in ipairs(state.currentSelection.data) do
 		if selInfo.marker and selInfo.object then
+			local objectUID = selInfo.object:GetAttribute("SuperiorAnimator_UID")
+			if not objectUID or not state.animationData[objectUID] then continue end
+
 			if state.currentSelection.type == "Keyframe" then
-				local propTrack = state.animationData[selInfo.object].Properties[selInfo.property]
+				local propTrack = state.animationData[objectUID].Properties[selInfo.property]
 				if propTrack then
 					local targetTrack = selInfo.component and propTrack.Components[selInfo.component] or propTrack
 					if targetTrack and targetTrack.keyframes[selInfo.frame] then
 						table.insert(deletedData, {
 							type = "Keyframe",
 							object = selInfo.object,
+							uid = objectUID,
 							property = selInfo.property,
 							component = selInfo.component,
 							frame = selInfo.frame,
@@ -2069,11 +2279,12 @@ local function deleteSelectedKeyframes()
 					end
 				end
 			elseif state.currentSelection.type == "Event" then
-				local eventTrack = state.animationData[selInfo.object].Events
+				local eventTrack = state.animationData[objectUID].Events
 				if eventTrack and eventTrack.keyframes[selInfo.frame] then
 					table.insert(deletedData, {
 						type = "Event",
 						object = selInfo.object,
+						uid = objectUID,
 						frame = selInfo.frame,
 						data = eventTrack.keyframes[selInfo.frame]
 					})
@@ -2088,7 +2299,7 @@ local function deleteSelectedKeyframes()
 		redo = function()
 			for _, deletedInfo in ipairs(deletedData) do
 				if deletedInfo.type == "Keyframe" then
-					local propTrack = state.animationData[deletedInfo.object].Properties[deletedInfo.property]
+					local propTrack = state.animationData[deletedInfo.uid].Properties[deletedInfo.property]
 					local targetTrack = deletedInfo.component and propTrack.Components[deletedInfo.component] or propTrack
 					if targetTrack and targetTrack.markers[deletedInfo.frame] then
 						targetTrack.markers[deletedInfo.frame]:Destroy()
@@ -2096,7 +2307,7 @@ local function deleteSelectedKeyframes()
 						targetTrack.keyframes[deletedInfo.frame] = nil
 					end
 				elseif deletedInfo.type == "Event" then
-					local eventTrack = state.animationData[deletedInfo.object].Events
+					local eventTrack = state.animationData[deletedInfo.uid].Events
 					if eventTrack and eventTrack.markers[deletedInfo.frame] then
 						eventTrack.markers[deletedInfo.frame]:Destroy()
 						eventTrack.markers[deletedInfo.frame] = nil
@@ -2141,7 +2352,9 @@ inputService.InputBegan:Connect(function(input, gameProcessedEvent)
 	elseif input.KeyCode == Enum.KeyCode.C and isCtrlDown then
 		if state.currentSelection.type == "Keyframe" and #state.currentSelection.data == 1 then
 			local kfInfo = state.currentSelection.data[1]
-			local propData = state.animationData[kfInfo.object].Properties[kfInfo.property]
+			local objectUID = kfInfo.object:GetAttribute("SuperiorAnimator_UID")
+			if not objectUID then return end
+			local propData = state.animationData[objectUID].Properties[kfInfo.property]
 			if not propData then return end
 
 			local targetTrack = kfInfo.component and propData.Components[kfInfo.component] or propData
@@ -2156,17 +2369,59 @@ inputService.InputBegan:Connect(function(input, gameProcessedEvent)
 				print("Keyframe disalin.")
 			end
 		end
+	elseif input.KeyCode == Enum.KeyCode.K and not isCtrlDown and not isShiftDown then
+		local selectedObjects = selection:Get()
+		if #selectedObjects == 0 then return end
+
+		local playheadX = ui.playhead.Position.X.Offset
+		local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
+		local currentFrame = math.floor(playheadX / pixelsPerFrame)
+
+		for _, object in ipairs(selectedObjects) do
+			local objectUID = object:GetAttribute("SuperiorAnimator_UID")
+			local isCamera = object:IsA("Camera")
+			if isCamera then
+				objectUID = "SuperiorAnimator_Camera"
+			end
+
+			-- Jika objek belum ada di timeline, tambahkan
+			if not (objectUID and state.animationData[objectUID]) then
+				createTrackForObject(object, false, nil, nil)
+
+				if not isCamera then
+					-- Dapatkan UID yang mungkin baru dibuat oleh fungsi di atas
+					local newUID = object:GetAttribute("SuperiorAnimator_UID")
+					if object:IsA("BasePart") and newUID and state.animationData[newUID] and not state.animationData[newUID].Properties["Size"] then
+						state.animationData[newUID].Properties["Size"] = {
+							keyframes = {}, markers = {}, Components = {},
+							ComponentTracks = {}, IsExpanded = false, ValueType = "Vector3"
+						}
+						createTrackForObject(object, true, "Size")
+					end
+				end
+				updateCanvasSize()
+			end
+
+			-- Tambahkan keyframe untuk CFrame dan Size (jika ada)
+			addKeyframeAction(object, "CFrame", currentFrame)
+			if object:IsA("BasePart") and not isCamera then
+				addKeyframeAction(object, "Size", currentFrame)
+			end
+		end
+
 	elseif input.KeyCode == Enum.KeyCode.V and isCtrlDown then
 		if not state.keyframeClipboard then return end
 		if not state.currentlySelectedTrack.object or not state.currentlySelectedTrack.property then return end
 
 		local object = state.currentlySelectedTrack.object
+		local objectUID = object:GetAttribute("SuperiorAnimator_UID")
+		if not objectUID then return end
 		local fullPropName = state.currentlySelectedTrack.property
 
 		local mainPropName, componentName = fullPropName:match("([^.]+)%.([^.]+)")
 		mainPropName = mainPropName or fullPropName
 
-		local propData = state.animationData[object].Properties[mainPropName]
+		local propData = state.animationData[objectUID].Properties[mainPropName]
 		if not propData then return end
 
 		local isCompatible = false

@@ -98,6 +98,8 @@ function TimelineLogic:setCurrentFrame(frame, isPlaying)
 	self.currentFrame = math.clamp(frame, 0, self.Config.MAX_FRAMES)
 
 	for uid, data in pairs(self.animationData) do
+		if uid == "SuperiorAnimator_Camera" then continue end
+
 		local object = data.object
 		if not object or not object.Parent then continue end
 
@@ -152,21 +154,24 @@ end
 
 -- The main update function to be called every frame
 function TimelineLogic:update(dt)
-	if not self.isPlaying then return end
+	if not self.isPlaying then return false end
 
 	local frameIncrement = dt * self.Config.FRAMES_PER_SECOND
 	local nextFrame = self.currentFrame + frameIncrement
 
+	local animationFinished = false
 	if nextFrame > self.Config.MAX_FRAMES then
 		if self.state.isLoopingEnabled then
 			nextFrame = 0
 		else
 			nextFrame = self.Config.MAX_FRAMES
 			self:pause()
+			animationFinished = true
 		end
 	end
 
 	self:setCurrentFrame(nextFrame, true)
+	return animationFinished
 end
 
 return TimelineLogic

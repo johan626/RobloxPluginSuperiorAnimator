@@ -1309,6 +1309,108 @@ function updateSelectedObjectLabel()
 	end
 end
 
+
+
+local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
+	local mainPropName, componentName = fullPropName:match("([^.]+)%.([^.]+)")
+	mainPropName = mainPropName or fullPropName
+
+	local objectUID
+	if selectedObject:IsA("Camera") then
+		objectUID = "SuperiorAnimator_Camera"
+	else
+		objectUID = selectedObject:GetAttribute("SuperiorAnimator_UID")
+	end
+
+	if not (objectUID and state.animationData[objectUID]) then return end
+
+	local propData = state.animationData[objectUID].Properties[mainPropName]
+	if not propData then return end
+
+	-- We need this for the undo function, so we define it here
+	local expandableTypes = {Vector3 = {"X", "Y", "Z"}, Color3 = {"R", "G", "B"}, UDim2 = {"XScale", "XOffset", "YScale", "YOffset"}}
+
+	local action = {
+		info = "Add Keyframe(s)",
+		redo = function()
+			if componentName then
+				if not propData.Components[componentName] then
+					propData.Components[componentName] = { keyframes = {}, markers = {} }
+				end
+				local compTrack = propData.Components[componentName]
+				if compTrack.keyframes[currentFrame] then return end
+
+				local currentValue = selectedObject[mainPropName]
+				local componentValue
+				if propData.ValueType == "UDim2" then
+					local udimComp = componentName:match("([XY])(Scale|Offset)")
+					componentValue = currentValue[udimComp:sub(1,1)][udimComp:sub(2)]
+				else
+					componentValue = currentValue[componentName]
+				end
+
+				addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", componentName)
+				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, componentName)
+			elseif propData.IsExpanded then
+				local components = expandableTypes[propData.ValueType]
+				local currentValue = selectedObject[mainPropName]
+
+				for _, compName in ipairs(components) do
+					if not propData.Components[compName] then
+						propData.Components[compName] = { keyframes = {}, markers = {} }
+					end
+					local compTrack = propData.Components[compName]
+					if compTrack.keyframes and compTrack.keyframes[currentFrame] then continue end
+
+					local componentValue
+					if propData.ValueType == "UDim2" then
+						local udimComp = compName:match("([XY])(Scale|Offset)")
+						componentValue = currentValue[udimComp:sub(1,1)][udimComp:sub(2)]
+					else
+						componentValue = currentValue[compName]
+					end
+					addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", compName)
+					createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, compName)
+				end
+			else
+				if propData.keyframes[currentFrame] then return end
+				addKeyframeData(selectedObject, mainPropName, currentFrame, selectedObject[mainPropName], "Linear", nil)
+				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, nil)
+			end
+			updateTimelineRuler()
+		end,
+		undo = function()
+			local objectUID = selectedObject:GetAttribute("SuperiorAnimator_UID")
+			if not objectUID then return end
+
+			local function removeKeyframe(uid, prop, frame, comp)
+				local pData = state.animationData[uid].Properties[prop]
+				if not pData then return end
+				local track = comp and pData.Components[comp] or pData
+				if track and track.markers and track.markers[frame] then
+					track.markers[frame]:Destroy()
+					track.markers[frame] = nil
+					track.keyframes[frame] = nil
+				end
+			end
+
+			if componentName then
+				removeKeyframe(objectUID, mainPropName, currentFrame, componentName)
+			elseif propData.IsExpanded then
+				local components = expandableTypes[propData.ValueType]
+				for _, compName in ipairs(components) do
+					removeKeyframe(objectUID, mainPropName, currentFrame, compName)
+				end
+			else
+				removeKeyframe(objectUID, mainPropName, currentFrame, nil)
+			end
+			updateTimelineRuler()
+		end
+	}
+	ActionHistory:register(action)
+	action.redo()
+end
+
 local function onCameraChanged()
 	if not state.isCameraLocked or not state.isAutoKeyingEnabled then return end
 
@@ -2040,106 +2142,6 @@ ui.addObjectButton.MouseButton1Click:Connect(function()
 	ActionHistory:register(action)
 	action.redo()
 end)
-
-local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
-	local mainPropName, componentName = fullPropName:match("([^.]+)%.([^.]+)")
-	mainPropName = mainPropName or fullPropName
-
-	local objectUID
-	if selectedObject:IsA("Camera") then
-		objectUID = "SuperiorAnimator_Camera"
-	else
-		objectUID = selectedObject:GetAttribute("SuperiorAnimator_UID")
-	end
-
-	if not (objectUID and state.animationData[objectUID]) then return end
-
-	local propData = state.animationData[objectUID].Properties[mainPropName]
-	if not propData then return end
-
-	-- We need this for the undo function, so we define it here
-	local expandableTypes = {Vector3 = {"X", "Y", "Z"}, Color3 = {"R", "G", "B"}, UDim2 = {"XScale", "XOffset", "YScale", "YOffset"}}
-
-	local action = {
-		info = "Add Keyframe(s)",
-		redo = function()
-			if componentName then
-				if not propData.Components[componentName] then
-					propData.Components[componentName] = { keyframes = {}, markers = {} }
-				end
-				local compTrack = propData.Components[componentName]
-				if compTrack.keyframes[currentFrame] then return end
-
-				local currentValue = selectedObject[mainPropName]
-				local componentValue
-				if propData.ValueType == "UDim2" then
-					local udimComp = componentName:match("([XY])(Scale|Offset)")
-					componentValue = currentValue[udimComp:sub(1,1)][udimComp:sub(2)]
-				else
-					componentValue = currentValue[componentName]
-				end
-
-				addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", componentName)
-				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, componentName)
-			elseif propData.IsExpanded then
-				local components = expandableTypes[propData.ValueType]
-				local currentValue = selectedObject[mainPropName]
-
-				for _, compName in ipairs(components) do
-					if not propData.Components[compName] then
-						propData.Components[compName] = { keyframes = {}, markers = {} }
-					end
-					local compTrack = propData.Components[compName]
-					if compTrack.keyframes and compTrack.keyframes[currentFrame] then continue end
-
-					local componentValue
-					if propData.ValueType == "UDim2" then
-						local udimComp = compName:match("([XY])(Scale|Offset)")
-						componentValue = currentValue[udimComp:sub(1,1)][udimComp:sub(2)]
-					else
-						componentValue = currentValue[compName]
-					end
-					addKeyframeData(selectedObject, mainPropName, currentFrame, componentValue, "Linear", compName)
-					createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, compName)
-				end
-			else
-				if propData.keyframes[currentFrame] then return end
-				addKeyframeData(selectedObject, mainPropName, currentFrame, selectedObject[mainPropName], "Linear", nil)
-				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, nil)
-			end
-			updateTimelineRuler()
-		end,
-		undo = function()
-			local objectUID = selectedObject:GetAttribute("SuperiorAnimator_UID")
-			if not objectUID then return end
-
-			local function removeKeyframe(uid, prop, frame, comp)
-				local pData = state.animationData[uid].Properties[prop]
-				if not pData then return end
-				local track = comp and pData.Components[comp] or pData
-				if track and track.markers and track.markers[frame] then
-					track.markers[frame]:Destroy()
-					track.markers[frame] = nil
-					track.keyframes[frame] = nil
-				end
-			end
-
-			if componentName then
-				removeKeyframe(objectUID, mainPropName, currentFrame, componentName)
-			elseif propData.IsExpanded then
-				local components = expandableTypes[propData.ValueType]
-				for _, compName in ipairs(components) do
-					removeKeyframe(objectUID, mainPropName, currentFrame, compName)
-				end
-			else
-				removeKeyframe(objectUID, mainPropName, currentFrame, nil)
-			end
-			updateTimelineRuler()
-		end
-	}
-	ActionHistory:register(action)
-	action.redo()
-end
 
 ui.addCameraButton.MouseButton1Click:Connect(function()
 	local cameraUID = "SuperiorAnimator_Camera"

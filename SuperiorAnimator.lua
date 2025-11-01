@@ -1150,8 +1150,14 @@ function updatePropertyDisplay(keyframeData, propName, eventData)
 end
 
 function updateScrubberFromTimeline()
-	local percent = timeline.currentFrame / Config.MAX_FRAMES
-	ui.playhead.Position = UDim2.new(percent * state.zoomLevel, 0, 0, 0)
+	-- 1. Dapatkan rumus pixel per frame yang benar (termasuk zoom)
+	local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
+
+	-- 2. Hitung posisi pixel (Offset) berdasarkan frame saat ini
+	local newPixelPosition = timeline.currentFrame * pixelsPerFrame
+
+	-- 3. Atur posisi playhead menggunakan Offset (argumen ke-2), bukan Scale (argumen ke-1)
+	ui.playhead.Position = UDim2.new(0, newPixelPosition, 0, 0)
 end
 
 function onHeartbeat(deltaTime)

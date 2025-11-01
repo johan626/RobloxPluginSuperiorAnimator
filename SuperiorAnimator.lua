@@ -46,7 +46,7 @@ local newAnimationButton = toolbar:CreateButton(
 local RunService = game:GetService("RunService")
 local inputService = game:GetService("UserInputService")
 local selection = game:GetService("Selection")
-local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Definisikan OutBounce secara terpisah untuk mengatasi masalah forward declaration
 local EasingModule = require(script.src.EasingFunctions)
@@ -233,6 +233,12 @@ local function disconnectAutoKeyListener(object)
 		end
 		state.debounceThreads[object] = nil
 	end
+end
+
+local function showNotification(title, message)
+	ui.notificationDialog.title.Text = title
+	ui.notificationDialog.message.Text = message
+	ui.notificationDialog.gui.Enabled = true
 end
 
 local function showConfirmation(title, message, onConfirm)
@@ -574,15 +580,21 @@ function createTrackForObject(object, isSubTrack, propName)
 		connectAutoKeyListener(object)
 	end
 
-	local trackLabelHolder = Instance.new("TextButton")
+	local trackLabelHolder = Instance.new("Frame")
 	trackLabelHolder.Name = (propName or object.Name) .. "_TrackLabel"
 	trackLabelHolder.Size = UDim2.new(1, 0, 0, Config.TRACK_HEIGHT)
 	trackLabelHolder.BackgroundColor3 = isSubTrack and Config.Colors.SubTrackLabelBackground or Config.Colors.TrackListBackground
 	trackLabelHolder.BorderSizePixel = 1
 	trackLabelHolder.BorderColor3 = Config.Colors.ContentBackground
-	trackLabelHolder.Text = ""
-	trackLabelHolder.AutoButtonColor = false
 	trackLabelHolder.Parent = ui.trackListFrame
+
+	local selectionButton = Instance.new("TextButton")
+	selectionButton.Name = "SelectionButton"
+	selectionButton.Size = UDim2.new(1, 0, 1, 0)
+	selectionButton.Text = ""
+	selectionButton.BackgroundTransparency = 1
+	selectionButton.ZIndex = 1
+	selectionButton.Parent = trackLabelHolder
 
 	local trackLabel = Instance.new("TextLabel")
 	trackLabel.Position = UDim2.new(0, isSubTrack and 15 or 5, 0, 0)
@@ -592,6 +604,7 @@ function createTrackForObject(object, isSubTrack, propName)
 	trackLabel.TextColor3 = Config.Colors.TextSecondary
 	trackLabel.BackgroundTransparency = 1
 	trackLabel.TextXAlignment = Enum.TextXAlignment.Left
+	trackLabel.ZIndex = 2
 	trackLabel.Parent = trackLabelHolder
 
 	local deleteTrackButton = Instance.new("TextButton")
@@ -603,12 +616,13 @@ function createTrackForObject(object, isSubTrack, propName)
 	deleteTrackButton.TextSize = 14
 	deleteTrackButton.TextColor3 = Config.Colors.TextMuted
 	deleteTrackButton.BackgroundColor3 = Config.Colors.ButtonDelete
+	deleteTrackButton.ZIndex = 3
 	deleteTrackButton.Parent = trackLabelHolder
 
 	deleteTrackButton.MouseButton1Click:Connect(function()
 		local trackName = isSubTrack and propName or object.Name
 		local title = "Hapus Track"
-		local message = "Apakah Anda yakin ingin menghapus track '" .. trackName .. "'? Tindakan ini tidak dapat diurungkan."
+		local message = "Apakah Anda yakin ingin menghapus track '" .. trackName .. "'?"
 
 		showConfirmation(title, message, function()
 			-- Jika ini sub-track, berikan nama propertinya. Jika tidak, kirim nil untuk menghapus seluruh objek.
@@ -625,6 +639,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		addPropButton.Text = "+"
 		addPropButton.Font = Enum.Font.SourceSansBold
 		addPropButton.TextSize = 16
+		addPropButton.ZIndex = 3
 		addPropButton.Parent = trackLabelHolder
 
 		addPropButton.MouseButton1Click:Connect(function()
@@ -735,6 +750,7 @@ function createTrackForObject(object, isSubTrack, propName)
 			expandButton.TextSize = 14
 			expandButton.TextColor3 = Config.Colors.TextMuted
 			expandButton.BackgroundTransparency = 1
+			expandButton.ZIndex = 2
 			expandButton.Parent = trackLabelHolder
 
 			trackLabel.Position = UDim2.new(0, 25, 0, 0)
@@ -857,7 +873,7 @@ function createTrackForObject(object, isSubTrack, propName)
 		end
 	end)
 
-	trackLabelHolder.MouseButton1Click:Connect(function()
+	selectionButton.MouseButton1Click:Connect(function()
 		if state.currentlySelectedTrack.label then
 			state.currentlySelectedTrack.label.BackgroundColor3 = state.currentlySelectedTrack.isSub and Config.Colors.SubTrackLabelBackground or Config.Colors.TrackListBackground
 		end
@@ -1274,7 +1290,12 @@ ui.saveDialog.confirmButton.MouseButton1Click:Connect(function()
 	local animName = ui.saveDialog.nameBox.Text
 	if Serialization.save(state.animationData, animName) then
 		ui.saveDialog.gui.Enabled = false
+		showNotification("Sukses", "Animasi '" .. animName .. "' berhasil disimpan!")
 	end
+end)
+
+ui.notificationDialog.okButton.MouseButton1Click:Connect(function()
+	ui.notificationDialog.gui.Enabled = false
 end)
 
 ui.loadButton.MouseButton1Click:Connect(function()
@@ -1282,7 +1303,7 @@ ui.loadButton.MouseButton1Click:Connect(function()
 		if not child:IsA("UIListLayout") then child:Destroy() end
 	end
 
-	local savesFolder = ServerStorage:FindFirstChild("SuperiorAnimator_Saves")
+	local savesFolder = ReplicatedStorage:FindFirstChild("SuperiorAnimator_Saves")
 	if not savesFolder then return end
 
 	for _, animModule in ipairs(savesFolder:GetChildren()) do
@@ -1326,63 +1347,84 @@ ui.loadButton.MouseButton1Click:Connect(function()
 			end)
 
 			animButton.MouseButton1Click:Connect(function()
-				clearTimeline()
+				local function doLoad()
+					clearTimeline()
 
-				local success, loadedData = pcall(require, animModule)
-				if not success then
-					warn("Gagal memuat data animasi:", loadedData)
-					return
-				end
+					local success, loadedData = pcall(require, animModule)
+					if not success then
+						warn("Gagal memuat data animasi:", loadedData)
+						showNotification("Error", "Gagal memuat file animasi. Lihat konsol output untuk detailnya.")
+						return
+					end
 
-				for path, data in pairs(loadedData.Objects) do
-					local object = workspace:FindFirstChild(path, true)
-					if object then
-						createTrackForObject(object, false)
+					local missingObjects = {}
 
-						for propName, propTrackData in pairs(data.Properties) do
-							if propName ~= "CFrame" then
-								state.animationData[object].Properties[propName] = { 
-									keyframes = {}, markers = {},
-									Components = {}, ComponentTracks = {}, IsExpanded = false,
-									ValueType = propTrackData.ValueType
-								}
-								createTrackForObject(object, true, propName)
-							end
+					for path, data in pairs(loadedData.Objects) do
+						local object = workspace:FindFirstChild(path, true)
+						if object then
+							createTrackForObject(object, false)
 
-							if propTrackData.Keyframes then
-								for frameStr, keyframeData in pairs(propTrackData.Keyframes) do
-									local frame = tonumber(frameStr)
-									local savedValue = keyframeData.Value
-									local value
-									if savedValue.vType == "CFrame" then value = CFrame.new(unpack(savedValue.comps))
-									elseif savedValue.vType == "Vector3" then value = Vector3.new(savedValue.x, savedValue.y, savedValue.z)
-									elseif savedValue.vType == "number" then value = savedValue.val
-									elseif savedValue.vType == "Color3" then value = Color3.new(savedValue.r, savedValue.g, savedValue.b)
-									elseif savedValue.vType == "UDim2" then value = UDim2.new(savedValue.xs, savedValue.xo, savedValue.ys, savedValue.yo)
-									elseif savedValue.vType == "boolean" then value = savedValue.val
-									end
-									if value then
-										addKeyframeData(object, propName, frame, value, keyframeData.Easing, nil)
-									end
+							for propName, propTrackData in pairs(data.Properties) do
+								if propName ~= "CFrame" then
+									state.animationData[object].Properties[propName] = {
+										keyframes = {}, markers = {},
+										Components = {}, ComponentTracks = {}, IsExpanded = false,
+										ValueType = propTrackData.ValueType
+									}
+									createTrackForObject(object, true, propName)
 								end
-							end
 
-							if propTrackData.Components then
-								for compName, compTrackData in pairs(propTrackData.Components) do
-									for frameStr, keyframeData in pairs(compTrackData.Keyframes) do
+								if propTrackData.Keyframes then
+									for frameStr, keyframeData in pairs(propTrackData.Keyframes) do
 										local frame = tonumber(frameStr)
-										local value = keyframeData.Value.val
-										addKeyframeData(object, propName, frame, value, keyframeData.Easing, compName)
+										local savedValue = keyframeData.Value
+										local value
+										if savedValue.vType == "CFrame" then value = CFrame.new(unpack(savedValue.comps))
+										elseif savedValue.vType == "Vector3" then value = Vector3.new(savedValue.x, savedValue.y, savedValue.z)
+										elseif savedValue.vType == "number" then value = savedValue.val
+										elseif savedValue.vType == "Color3" then value = Color3.new(savedValue.r, savedValue.g, savedValue.b)
+										elseif savedValue.vType == "UDim2" then value = UDim2.new(savedValue.xs, savedValue.xo, savedValue.ys, savedValue.yo)
+										elseif savedValue.vType == "boolean" then value = savedValue.val
+										end
+										if value then
+											addKeyframeData(object, propName, frame, value, keyframeData.Easing, nil)
+										end
+									end
+								end
+
+								if propTrackData.Components then
+									for compName, compTrackData in pairs(propTrackData.Components) do
+										for frameStr, keyframeData in pairs(compTrackData.Keyframes) do
+											local frame = tonumber(frameStr)
+											local value = keyframeData.Value.val
+											addKeyframeData(object, propName, frame, value, keyframeData.Easing, compName)
+										end
 									end
 								end
 							end
+						else
+							table.insert(missingObjects, path)
 						end
-					else
-						warn("Superior Animator: Objek tidak ditemukan di path: " .. path)
+					end
+
+					updateCanvasSize()
+					ui.loadDialog.gui.Enabled = false
+
+					if #missingObjects > 0 then
+						local message = "Gagal memuat trek untuk objek berikut karena tidak dapat ditemukan:\n\n" .. table.concat(missingObjects, "\n")
+						showNotification("Peringatan Pemuatan", message)
 					end
 				end
-				updateCanvasSize()
-				ui.loadDialog.gui.Enabled = false
+
+				if next(state.animationData) then
+					showConfirmation(
+						"Konfirmasi Muat",
+						"Memuat animasi baru akan menghapus pekerjaan Anda yang belum disimpan. Apakah Anda yakin ingin melanjutkan?",
+						doLoad
+					)
+				else
+					doLoad()
+				end
 			end)
 		end
 	end
@@ -1406,6 +1448,7 @@ ui.exportDialog.confirmButton.MouseButton1Click:Connect(function()
 	local animName = ui.exportDialog.nameBox.Text
 	if Serialization.export(state.animationData, animName, Config.FRAMES_PER_SECOND) then
 		ui.exportDialog.gui.Enabled = false
+		showNotification("Sukses", "Animasi '" .. animName .. "' berhasil diekspor!")
 	end
 end)
 
@@ -1494,7 +1537,7 @@ ui.keyframeAreaFrame.InputBegan:Connect(function(input)
 		if state.draggingKeyframeInfo or state.draggingPlaybackHandle or state.isDraggingPlayhead then return end
 
 		state.isMarqueeSelecting = true
-		state.marqueeStartPoint = input.Position
+		state.marqueeStartPoint = Vector2.new(input.Position.X, input.Position.Y)
 
 		for _, selectedInfo in ipairs(state.currentSelection.data) do
 			if selectedInfo.marker and selectedInfo.marker.Parent then

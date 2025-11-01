@@ -771,6 +771,55 @@ function UIManager.create(parentWidget, Config)
 	confirmCancelButton.Font = Enum.Font.SourceSansBold
 	confirmCancelButton.Parent = confirmDialogFrame
 
+	-- NOTIFICATION DIALOG --
+	local notificationDialogGui = Instance.new("ScreenGui")
+	notificationDialogGui.Name = "NotificationDialogGui"
+	notificationDialogGui.Enabled = false
+	notificationDialogGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	notificationDialogGui.Parent = parentWidget
+
+	local notificationDialogFrame = Instance.new("Frame")
+	notificationDialogFrame.Name = "NotificationDialogFrame"
+	notificationDialogFrame.Size = UDim2.new(0, 300, 0, 150)
+	notificationDialogFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	notificationDialogFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	notificationDialogFrame.BackgroundColor3 = Config.Colors.DialogBackground
+	notificationDialogFrame.BorderColor3 = Config.Colors.Border
+	notificationDialogFrame.Parent = notificationDialogGui
+
+	local notificationTitle = Instance.new("TextLabel")
+	notificationTitle.Name = "NotificationTitle"
+	notificationTitle.Size = UDim2.new(1, 0, 0, 30)
+	notificationTitle.Text = "Notifikasi"
+	notificationTitle.Font = Enum.Font.SourceSansBold
+	notificationTitle.TextSize = 16
+	notificationTitle.TextColor3 = Config.Colors.TextPrimary
+	notificationTitle.BackgroundColor3 = Config.Colors.DialogHeader
+	notificationTitle.Parent = notificationDialogFrame
+
+	local notificationMessage = Instance.new("TextLabel")
+	notificationMessage.Name = "NotificationMessage"
+	notificationMessage.Size = UDim2.new(1, -20, 0, 60)
+	notificationMessage.Position = UDim2.new(0, 10, 0, 35)
+	notificationMessage.Text = "Ini adalah pesan notifikasi."
+	notificationMessage.Font = Enum.Font.SourceSans
+	notificationMessage.TextSize = 14
+	notificationMessage.TextColor3 = Config.Colors.TextSecondary
+	notificationMessage.TextWrapped = true
+	notificationMessage.TextYAlignment = Enum.TextYAlignment.Top
+	notificationMessage.BackgroundTransparency = 1
+	notificationMessage.Parent = notificationDialogFrame
+
+	local notificationOkButton = Instance.new("TextButton")
+	notificationOkButton.Name = "NotificationOkButton"
+	notificationOkButton.Size = UDim2.new(1, -20, 0, 30)
+	notificationOkButton.Position = UDim2.new(0, 10, 1, -40)
+	notificationOkButton.Text = "OK"
+	notificationOkButton.BackgroundColor3 = Config.Colors.ButtonPrimary
+	notificationOkButton.TextColor3 = Config.Colors.TextPrimary
+	notificationOkButton.Font = Enum.Font.SourceSansBold
+	notificationOkButton.Parent = notificationDialogFrame
+
 	-- PROPERTY SELECTOR MENU --
 	local propMenuFrame = Instance.new("Frame")
 	propMenuFrame.Name = "PropertyMenu"
@@ -888,6 +937,12 @@ function UIManager.create(parentWidget, Config)
 			message = confirmMessage,
 			yesButton = confirmYesButton,
 			cancelButton = confirmCancelButton,
+		},
+		notificationDialog = {
+			gui = notificationDialogGui,
+			title = notificationTitle,
+			message = notificationMessage,
+			okButton = notificationOkButton,
 		},
 		contextMenu = {
 			frame = contextMenuFrame,

@@ -1,6 +1,6 @@
 -- SuperiorAnimator/src/Serialization.lua
 
-local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Serialization = {}
 
@@ -89,11 +89,11 @@ function Serialization.save(animationData, animName)
 
 	local moduleSource = "return " .. tableToString(serializableData)
 
-	local savesFolder = ServerStorage:FindFirstChild("SuperiorAnimator_Saves")
+	local savesFolder = ReplicatedStorage:FindFirstChild("SuperiorAnimator_Saves")
 	if not savesFolder then
 		savesFolder = Instance.new("Folder")
 		savesFolder.Name = "SuperiorAnimator_Saves"
-		savesFolder.Parent = ServerStorage
+		savesFolder.Parent = ReplicatedStorage
 	end
 
 	local newAnimModule = Instance.new("ModuleScript")
@@ -101,7 +101,6 @@ function Serialization.save(animationData, animName)
 	newAnimModule.Source = moduleSource
 	newAnimModule.Parent = savesFolder
 
-	print("Superior Animator: Animasi '" .. animName .. "' berhasil disimpan!")
 	return true
 end
 
@@ -211,17 +210,16 @@ function Serialization.export(animationData, animName, fps)
 			end
 		end
 
-		local exportsFolder = ServerStorage:FindFirstChild("SuperiorAnimator_Exports")
+		local exportsFolder = ReplicatedStorage:FindFirstChild("SuperiorAnimator_Exports")
 		if not exportsFolder then
 			exportsFolder = Instance.new("Folder")
 			exportsFolder.Name = "SuperiorAnimator_Exports"
-			exportsFolder.Parent = ServerStorage
+			exportsFolder.Parent = ReplicatedStorage
 		end
 		animation.Parent = exportsFolder
 	end)
 
 	if success then
-		print("Animasi berhasil diekspor!")
 		return true
 	else
 		warn("Ekspor animasi gagal:", result)

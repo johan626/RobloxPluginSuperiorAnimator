@@ -64,7 +64,7 @@ function TimelineLogic:getValueAtFrame(propertyTrack, frame)
 
 	-- Interpolation
 	local alpha = (frame - prevFrame) / (nextFrame - prevFrame)
-	local easingFunction = EasingFunctions.getEasingFunction(prevKeyframe.Easing or "Linear")
+	local easingFunction = EasingFunctions.Functions[prevKeyframe.Easing or "Linear"]
 	alpha = easingFunction(alpha)
 
 	local p_val = prevKeyframe.Value

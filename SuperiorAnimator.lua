@@ -1272,6 +1272,16 @@ function updateScrubberFromTimeline()
 	ui.playhead.Position = UDim2.new(0, newPixelPosition, 0, 0)
 end
 
+local function updateCameraPreview()
+	local cameraUID = "SuperiorAnimator_Camera"
+	if not state.animationData[cameraUID] then return end
+
+	local animatedCFrame = timeline:getValueAtFrame("SuperiorAnimator_Camera", "CFrame", timeline.currentFrame)
+	if animatedCFrame then
+		workspace.CurrentCamera.CFrame = animatedCFrame
+	end
+end
+
 function onHeartbeat(deltaTime)
 	if timeline.isPlaying then
 		acquireCameraControl()
@@ -1284,16 +1294,6 @@ function onHeartbeat(deltaTime)
 	end
 
 	updateScrubberFromTimeline()
-end
-
-local function updateCameraPreview()
-	local cameraUID = "SuperiorAnimator_Camera"
-	if not state.animationData[cameraUID] then return end
-
-	local animatedCFrame = timeline:getValueAtFrame("SuperiorAnimator_Camera", "CFrame", timeline.currentFrame)
-	if animatedCFrame then
-		workspace.CurrentCamera.CFrame = animatedCFrame
-	end
 end
 
 function updateSelectedObjectLabel()

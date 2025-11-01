@@ -120,9 +120,9 @@ local function createEventMarkerUI(object, frame, name)
 		if state.currentSelection.type ~= "Event" then
 			for _, selectedInfo in ipairs(state.currentSelection.data) do
 				if selectedInfo.marker and selectedInfo.marker.Parent then
-				local selectedObjectUID = selectedInfo.object:GetAttribute("SuperiorAnimator_UID")
-				if not selectedObjectUID then continue end
-				local prevPropData = state.animationData[selectedObjectUID].Properties[selectedInfo.property]
+					local selectedObjectUID = selectedInfo.object:GetAttribute("SuperiorAnimator_UID")
+					if not selectedObjectUID then continue end
+					local prevPropData = state.animationData[selectedObjectUID].Properties[selectedInfo.property]
 					if prevPropData then
 						local prevKeyframeData = (selectedInfo.component and prevPropData.Components[selectedInfo.component] or prevPropData).keyframes[selectedInfo.frame]
 						if prevKeyframeData then
@@ -760,7 +760,7 @@ function createTrackForObject(object, isSubTrack, propName, uid)
 							if object and not state.animationData[objectUID].Properties[propName] then
 								local action = {
 									redo = function()
-										state.animationData[objectUID].Properties[propName] = {
+										state.animationData[objectUID].Properties[propName] = { 
 											keyframes = {}, 
 											markers = {},
 											Components = {},
@@ -2392,7 +2392,7 @@ inputService.InputBegan:Connect(function(input, gameProcessedEvent)
 					-- Dapatkan UID yang mungkin baru dibuat oleh fungsi di atas
 					local newUID = object:GetAttribute("SuperiorAnimator_UID")
 					if object:IsA("BasePart") and newUID and state.animationData[newUID] and not state.animationData[newUID].Properties["Size"] then
-						state.animationData[newUID].Properties["Size"] = {
+						state.animationData[newUID].Properties["Size"] = { 
 							keyframes = {}, markers = {}, Components = {},
 							ComponentTracks = {}, IsExpanded = false, ValueType = "Vector3"
 						}

@@ -20,10 +20,12 @@ local addKeyframeData
 local createKeyframeMarkerUI
 local deleteTrack
 local updateKeyframeValue
-local openContextMenu
 local handleKeyframeSelection
-local updateTimelineRuler
 local addKeyframeAction
+local updateCameraPreview
+local onCameraChanged
+local connectCameraListener
+local disconnectCameraListener
 
 -- Fungsi ini HANYA membuat dan mengembalikan elemen-elemen UI.
 local UIManager = require(script.src.UIManager)
@@ -80,6 +82,8 @@ local state = {
 	playbackSpeed = 1.0, -- 1.0 = 100% speed
 	isLoopingEnabled = false,
 	originalCameraType = nil,
+	isCameraLocked = false,
+	cameraChangedConnection = nil,
 }
 
 -- === MODUL LOGIKA ===
@@ -1238,6 +1242,25 @@ function updatePropertyDisplay(keyframeData, propName, eventData)
 	end
 end
 
+local function releaseCameraControl()
+	if state.originalCameraType then
+		workspace.CurrentCamera.CameraType = state.originalCameraType
+		state.originalCameraType = nil
+	end
+end
+
+local function acquireCameraControl()
+	local cameraUID = "SuperiorAnimator_Camera"
+	if not state.animationData[cameraUID] then return end
+	if not next(state.animationData[cameraUID].Properties.CFrame.keyframes) then return end
+
+	local camera = workspace.CurrentCamera
+	if not state.originalCameraType then
+		state.originalCameraType = camera.CameraType
+	end
+	camera.CameraType = Enum.CameraType.Scriptable
+end
+
 function updateScrubberFromTimeline()
 	-- 1. Dapatkan rumus pixel per frame yang benar (termasuk zoom)
 	local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
@@ -1250,22 +1273,26 @@ function updateScrubberFromTimeline()
 end
 
 function onHeartbeat(deltaTime)
-	timeline:update(deltaTime * state.playbackSpeed)
+	if timeline.isPlaying then
+		acquireCameraControl()
+		updateCameraPreview()
+	end
+
+	local animationFinished = timeline:update(deltaTime * state.playbackSpeed)
+	if animationFinished then
+		releaseCameraControl()
+	end
+
 	updateScrubberFromTimeline()
+end
 
-	-- Handle camera animation
+local function updateCameraPreview()
 	local cameraUID = "SuperiorAnimator_Camera"
-	if state.animationData[cameraUID] and timeline.isPlaying then
-		local camera = workspace.CurrentCamera
-		if not state.originalCameraType then
-			state.originalCameraType = camera.CameraType
-		end
-		camera.CameraType = Enum.CameraType.Scriptable
+	if not state.animationData[cameraUID] then return end
 
-		local animatedCFrame = timeline:getValueAtFrame("SuperiorAnimator_Camera", "CFrame", timeline.currentFrame)
-		if animatedCFrame then
-			camera.CFrame = animatedCFrame
-		end
+	local animatedCFrame = timeline:getValueAtFrame("SuperiorAnimator_Camera", "CFrame", timeline.currentFrame)
+	if animatedCFrame then
+		workspace.CurrentCamera.CFrame = animatedCFrame
 	end
 end
 
@@ -1279,6 +1306,42 @@ function updateSelectedObjectLabel()
 	else
 		state.currentlySelectedObject = nil
 		ui.selectedObjectLabel.Text = "Tidak ada objek yang dipilih"
+	end
+end
+
+local function onCameraChanged()
+	if not state.isCameraLocked or not state.isAutoKeyingEnabled then return end
+
+	local cameraUID = "SuperiorAnimator_Camera"
+	local camera = workspace.CurrentCamera
+	if not state.animationData[cameraUID] then return end
+
+	if not state.debounceThreads[camera] then state.debounceThreads[camera] = {} end
+
+	if state.debounceThreads[camera]["CFrame"] then
+		task.cancel(state.debounceThreads[camera]["CFrame"])
+	end
+
+	state.debounceThreads[camera]["CFrame"] = task.delay(0.1, function()
+		local playheadX = ui.playhead.Position.X.Offset
+		local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
+		local currentFrame = math.floor(playheadX / pixelsPerFrame)
+
+		addKeyframeAction(camera, "CFrame", currentFrame)
+
+		state.debounceThreads[camera]["CFrame"] = nil
+	end)
+end
+
+local function connectCameraListener()
+	if state.cameraChangedConnection then return end
+	state.cameraChangedConnection = workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Connect(onCameraChanged)
+end
+
+local function disconnectCameraListener()
+	if state.cameraChangedConnection then
+		state.cameraChangedConnection:Disconnect()
+		state.cameraChangedConnection = nil
 	end
 end
 
@@ -1607,6 +1670,21 @@ ui.autoKeyButton.MouseButton1Click:Connect(function()
 	end
 end)
 
+ui.cameraLockButton.MouseButton1Click:Connect(function()
+	state.isCameraLocked = not state.isCameraLocked
+	if state.isCameraLocked then
+		ui.cameraLockButton.BackgroundColor3 = Config.Colors.ButtonPrimary
+		acquireCameraControl()
+		connectCameraListener()
+	else
+		ui.cameraLockButton.BackgroundColor3 = Config.Colors.ButtonSecondary
+		disconnectCameraListener()
+		if not timeline.isPlaying then
+			releaseCameraControl()
+		end
+	end
+end)
+
 
 newAnimationButton.Click:Connect(function()
 	mainWidget.Enabled = not mainWidget.Enabled
@@ -1639,12 +1717,15 @@ ui.timelineRuler.InputBegan:Connect(function(input)
 		if state.draggingKeyframeInfo or state.draggingPlaybackHandle then return end
 
 		state.isDraggingPlayhead = true
+		acquireCameraControl()
+
 		local mouseX = input.Position.X - ui.timelineRuler.AbsolutePosition.X
 		local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
 		local frame = mouseX / pixelsPerFrame
 
 		timeline:setCurrentFrame(frame)
 		updateScrubberFromTimeline()
+		updateCameraPreview()
 	end
 end)
 
@@ -1687,6 +1768,7 @@ inputService.InputChanged:Connect(function(input)
 		local frame = mouseX / pixelsPerFrame
 		timeline:setCurrentFrame(frame)
 		updateScrubberFromTimeline()
+		updateCameraPreview()
 	elseif state.isMarqueeSelecting and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local currentPos = input.Position
 		local startPos = state.marqueeStartPoint
@@ -1775,12 +1857,20 @@ end)
 
 inputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if state.isDraggingPlayhead then
+			state.isDraggingPlayhead = false
+			if not timeline.isPlaying then
+				releaseCameraControl()
+			end
+		end
+
 		if state.isMarqueeSelecting then
 			state.isMarqueeSelecting = false
 			ui.marqueeSelectionBox.Visible = false
 		end
-		state.isDraggingPlayhead = false
+
 		state.draggingPlaybackHandle = nil
+
 		if state.draggingKeyframeInfo then
 			local pixelsPerFrame = (Config.PIXELS_PER_FRAME_INTERVAL / Config.FRAMES_PER_INTERVAL) * state.zoomLevel
 
@@ -2115,10 +2205,7 @@ end)
 ui.stopButton.MouseButton1Click:Connect(function()
 	timeline:stop()
 	updateScrubberFromTimeline()
-	if state.originalCameraType then
-		workspace.CurrentCamera.CameraType = state.originalCameraType
-		state.originalCameraType = nil
-	end
+	releaseCameraControl()
 end)
 
 ui.easingButton.MouseButton1Click:Connect(function()

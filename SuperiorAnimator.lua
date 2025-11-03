@@ -16,6 +16,7 @@ local openContextMenu
 local updateCanvasSize
 local clearTimeline
 local createTrackForObject
+local toggleTrackExpansion -- Ditambahkan untuk refactor
 local addKeyframeData
 local createKeyframeMarkerUI
 local deleteTrack
@@ -98,6 +99,46 @@ local ActionHistory = ActionHistoryManager.new(ui, Config)
 
 
 -- === FUNCTION DEFINITIONS ===
+
+-- Fungsi refactor baru untuk menangani logika expand/collapse
+local function toggleTrackExpansion(object, propName, expandButton)
+	local objectUID = object:GetAttribute("SuperiorAnimator_UID")
+	if not objectUID then return end
+
+	local propData = state.animationData[objectUID] and state.animationData[objectUID].Properties[propName]
+	if not propData then return end
+
+	propData.IsExpanded = not propData.IsExpanded
+	if expandButton then
+		expandButton.Text = propData.IsExpanded and "v" or ">"
+	end
+
+	local expandableTypes = {Vector3 = {"X", "Y", "Z"}, Color3 = {"R", "G", "B"}, UDim2 = {"XScale", "XOffset", "YScale", "YOffset"}}
+
+	if propData.IsExpanded then
+		local components = expandableTypes[propData.ValueType]
+		for i, compName in ipairs(components) do
+			local componentTrackName = propName .. "." .. compName
+			-- Perhatikan: createTrackForObject sekarang mengembalikan tombol expand, tetapi kita tidak membutuhkannya di sini
+			local compTrackLabel, compKeyframeTrack = createTrackForObject(object, true, componentTrackName)
+			propData.ComponentTracks[compName] = {label = compTrackLabel, keyframes = compKeyframeTrack}
+
+			if propData.Components[compName] then
+				for frame, _ in pairs(propData.Components[compName].keyframes) do
+					createKeyframeMarkerUI(object, propName, frame, compName)
+				end
+			end
+		end
+	else
+		for compName, trackUI in pairs(propData.ComponentTracks) do
+			trackUI.label:Destroy()
+			trackUI.keyframes:Destroy()
+		end
+		propData.ComponentTracks = {}
+	end
+	updateCanvasSize()
+end
+
 
 local function createEventMarkerUI(object, frame, name)
 	local objectUID = object:GetAttribute("SuperiorAnimator_UID")
@@ -614,6 +655,7 @@ function clearTimeline()
 end
 
 function createTrackForObject(object, isSubTrack, propName, uid)
+	local expandButton = nil -- Deklarasikan di scope atas
 	-- Gunakan UID sebagai kunci utama untuk pengecekan
 	if not isSubTrack and uid and state.animationData[uid] then return end
 
@@ -827,11 +869,12 @@ function createTrackForObject(object, isSubTrack, propName, uid)
 		if isExpandable then
 			trackLabel.Size = UDim2.new(1, -55, 1, 0)
 
-			local expandButton = Instance.new("TextButton")
+			expandButton = Instance.new("TextButton")
 			expandButton.Name = "ExpandButton"
 			expandButton.Size = UDim2.new(0, 20, 0, 20)
 			expandButton.Position = UDim2.new(0, 5, 0.5, -10)
-			expandButton.Text = ">"
+			-- Atur teks awal berdasarkan status yang ada (penting untuk pemuatan)
+			expandButton.Text = propData.IsExpanded and "v" or ">"
 			expandButton.Font = Enum.Font.SourceSansBold
 			expandButton.TextSize = 14
 			expandButton.TextColor3 = Config.Colors.TextMuted
@@ -841,31 +884,9 @@ function createTrackForObject(object, isSubTrack, propName, uid)
 
 			trackLabel.Position = UDim2.new(0, 25, 0, 0)
 
+			-- Panggil fungsi refactor yang baru
 			expandButton.MouseButton1Click:Connect(function()
-				propData.IsExpanded = not propData.IsExpanded
-				expandButton.Text = propData.IsExpanded and "v" or ">"
-
-				if propData.IsExpanded then
-					local components = expandableTypes[propData.ValueType]
-					for i, compName in ipairs(components) do
-						local componentTrackName = propName .. "." .. compName
-						local compTrackLabel, compKeyframeTrack = createTrackForObject(object, true, componentTrackName)
-						propData.ComponentTracks[compName] = {label = compTrackLabel, keyframes = compKeyframeTrack}
-
-						if propData.Components[compName] then
-							for frame, _ in pairs(propData.Components[compName].keyframes) do
-								createKeyframeMarkerUI(object, propName, frame, compName)
-							end
-						end
-					end
-				else
-					for compName, trackUI in pairs(propData.ComponentTracks) do
-						trackUI.label:Destroy()
-						trackUI.keyframes:Destroy()
-					end
-					propData.ComponentTracks = {}
-				end
-				updateCanvasSize()
+				toggleTrackExpansion(object, propName, expandButton)
 			end)
 		else
 			trackLabel.Size = UDim2.new(1, -30, 1, 0)
@@ -980,7 +1001,8 @@ function createTrackForObject(object, isSubTrack, propName, uid)
 		keyframeTrack.LayoutOrder = trackLabelHolder.LayoutOrder
 	end
 
-	return trackLabelHolder, keyframeTrack
+	-- Kembalikan tombol expand untuk logika pemuatan
+	return trackLabelHolder, keyframeTrack, expandButton
 end
 
 -- Hanya menambahkan data keyframe ke tabel animationData
@@ -1360,6 +1382,15 @@ local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
 	local action = {
 		info = "Add Keyframe(s)",
 		redo = function()
+			local targetObject = selectedObject
+			if targetObject:IsA("Model") then
+				targetObject = targetObject.PrimaryPart
+				if not targetObject then
+					warn("Tidak dapat menambahkan keyframe CFrame ke Model tanpa PrimaryPart.")
+					return
+				end
+			end
+
 			if componentName then
 				if not propData.Components[componentName] then
 					propData.Components[componentName] = { keyframes = {}, markers = {} }
@@ -1367,7 +1398,7 @@ local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
 				local compTrack = propData.Components[componentName]
 				if compTrack.keyframes[currentFrame] then return end
 
-				local currentValue = selectedObject[mainPropName]
+				local currentValue = targetObject[mainPropName]
 				local componentValue
 				if propData.ValueType == "UDim2" then
 					local udimComp = componentName:match("([XY])(Scale|Offset)")
@@ -1380,7 +1411,7 @@ local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
 				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, componentName)
 			elseif propData.IsExpanded then
 				local components = expandableTypes[propData.ValueType]
-				local currentValue = selectedObject[mainPropName]
+				local currentValue = targetObject[mainPropName]
 
 				for _, compName in ipairs(components) do
 					if not propData.Components[compName] then
@@ -1401,7 +1432,7 @@ local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
 				end
 			else
 				if propData.keyframes[currentFrame] then return end
-				addKeyframeData(selectedObject, mainPropName, currentFrame, selectedObject[mainPropName], "Linear", nil)
+				addKeyframeData(selectedObject, mainPropName, currentFrame, targetObject[mainPropName], "Linear", nil)
 				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, nil)
 			end
 			updateTimelineRuler()
@@ -1641,6 +1672,7 @@ ui.loadButton.MouseButton1Click:Connect(function()
 					end
 
 					local missingObjectsInfo = {}
+					local tracksToExpand = {} -- Tabel untuk melacak trek yang perlu diperluas
 
 					-- 1. Buat peta semua objek yang dapat dianimasikan di workspace
 					local uidToObjectMap = {}
@@ -1669,10 +1701,22 @@ ui.loadButton.MouseButton1Click:Connect(function()
 								if propName ~= "CFrame" then
 									state.animationData[uid].Properties[propName] = {
 										keyframes = {}, markers = {},
-										Components = {}, ComponentTracks = {}, IsExpanded = false,
+										Components = {}, ComponentTracks = {},
+										-- Atur status IsExpanded dari data yang dimuat
+										IsExpanded = propTrackData.IsExpanded or false,
 										ValueType = propTrackData.ValueType or typeof(object[propName]) -- Fallback
 									}
-									createTrackForObject(object, true, propName)
+									-- Abaikan expandButton untuk saat ini
+									local _, _, expandButton = createTrackForObject(object, true, propName)
+
+									-- Jika trek ini harus diperluas, simpan untuk nanti
+									if propTrackData.IsExpanded then
+										table.insert(tracksToExpand, {
+											object = object,
+											propName = propName,
+											button = expandButton
+										})
+									end
 								end
 							end
 
@@ -1712,6 +1756,14 @@ ui.loadButton.MouseButton1Click:Connect(function()
 							-- Objek tidak ditemukan
 							table.insert(missingObjectsInfo, "- " .. (data.Name or "Tanpa Nama") .. " (UID: " .. uid .. ")")
 						end
+					end
+
+					-- Setelah semuanya dimuat, perluas trek yang diperlukan
+					for _, expandInfo in ipairs(tracksToExpand) do
+						-- Panggil fungsi toggle. Karena IsExpanded sudah true, ini akan membuat sub-trek.
+						-- Kita setel lagi ke false agar saat toggle dipanggil, ia menjadi true dan membuat UI.
+						state.animationData[expandInfo.object:GetAttribute("SuperiorAnimator_UID")].Properties[expandInfo.propName].IsExpanded = false
+						toggleTrackExpansion(expandInfo.object, expandInfo.propName, expandInfo.button)
 					end
 
 					updateCanvasSize()
@@ -2553,6 +2605,9 @@ updateCanvasSize()
 local function bindHotkeys()
 	local function onAction(actionName, inputState, inputObject)
 		if inputState == Enum.UserInputState.Begin then
+			-- Periksa modifier key di dalam callback
+			local isCtrlDown = inputService:IsKeyDown(Enum.KeyCode.LeftControl) or inputService:IsKeyDown(Enum.KeyCode.RightControl)
+
 			if actionName == "Animator_PlayPause" then
 				ui.playButton.MouseButton1Click:Fire()
 			elseif actionName == "Animator_AddKeyframe" then
@@ -2590,9 +2645,9 @@ local function bindHotkeys()
 						addKeyframeAction(object, "Size", currentFrame)
 					end
 				end
-			elseif actionName == "Animator_Undo" then
+			elseif actionName == "Animator_Undo" and isCtrlDown then
 				ActionHistory:undo()
-			elseif actionName == "Animator_Redo" then
+			elseif actionName == "Animator_Redo" and isCtrlDown then
 				ActionHistory:redo()
 			end
 		end
@@ -2601,8 +2656,9 @@ local function bindHotkeys()
 
 	ContextActionService:BindAction("Animator_PlayPause", onAction, false, Enum.KeyCode.Space)
 	ContextActionService:BindAction("Animator_AddKeyframe", onAction, false, Enum.KeyCode.K)
-	ContextActionService:BindAction("Animator_Undo", onAction, false, Enum.KeyCode.Z, Enum.ModifierKey.Ctrl)
-	ContextActionService:BindAction("Animator_Redo", onAction, false, Enum.KeyCode.Y, Enum.ModifierKey.Ctrl)
+	-- Ikat ke tombol Z dan Y tanpa modifier
+	ContextActionService:BindAction("Animator_Undo", onAction, false, Enum.KeyCode.Z)
+	ContextActionService:BindAction("Animator_Redo", onAction, false, Enum.KeyCode.Y)
 end
 
 local function unbindHotkeys()

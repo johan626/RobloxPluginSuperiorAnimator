@@ -91,7 +91,8 @@ function Serialization.save(animationData, animName, httpService)
 			properties[propName] = { 
 				Keyframes = keyframes, 
 				Components = components, 
-				ValueType = propTrack.ValueType 
+				ValueType = propTrack.ValueType,
+				IsExpanded = propTrack.IsExpanded or false -- Simpan status expand
 			}
 		end
 

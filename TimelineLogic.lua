@@ -95,6 +95,22 @@ function TimelineLogic:getValueAtFrame(propertyTrack, frame)
 end
 
 
+-- Helper to check if a track or any of its component tracks have keyframes
+local function trackHasKeyframes(track)
+	if track.keyframes and next(track.keyframes) then
+		return true
+	end
+	if track.Components then
+		for _, compTrack in pairs(track.Components) do
+			if compTrack.keyframes and next(compTrack.keyframes) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+
 -- Sets the current frame and updates the objects in the scene to match
 function TimelineLogic:setCurrentFrame(frame, isPlaying)
 	self.currentFrame = math.clamp(frame, 0, self.Config.MAX_FRAMES)
@@ -105,49 +121,48 @@ function TimelineLogic:setCurrentFrame(frame, isPlaying)
 		local object = data.object
 		if not object or not object.Parent then continue end
 
-		local cframeComponents = {}
-
 		for propName, propTrack in pairs(data.Properties) do
 			local finalValue
 
-			-- Handle composite properties like CFrame
+			-- Handle properties with animated components (expanded tracks)
 			if propTrack.Components and next(propTrack.Components) then
-				local componentValues = {}
-				local allComponentsHaveValue = true
-				for compName, compTrack in pairs(propTrack.Components) do
-					local val = self:getValueAtFrame(compTrack, self.currentFrame)
-					if val ~= nil then
-						componentValues[compName] = val
-					else
-						-- If a component is missing a value, try to get it from the instance itself
-						if propName == "CFrame" and (compName == "Position" or compName == "Rotation") then
-							componentValues[compName] = object[propName][compName]
-						else
-							allComponentsHaveValue = false
-							break 
-						end
-					end
-				end
+				local baseValue = object[propName] -- Get the current value as a base
+				local valueType = typeof(baseValue)
 
-				if allComponentsHaveValue then
-					if propName == "CFrame" then
-						finalValue = CFrame.new(componentValues.Position) * CFrame.Angles(
-							math.rad(componentValues.Rotation.X),
-							math.rad(componentValues.Rotation.Y),
-							math.rad(componentValues.Rotation.Z)
-						)
-					end
+				if valueType == "Vector3" then
+					local x = self:getValueAtFrame(propTrack.Components.X, self.currentFrame) or baseValue.X
+					local y = self:getValueAtFrame(propTrack.Components.Y, self.currentFrame) or baseValue.Y
+					local z = self:getValueAtFrame(propTrack.Components.Z, self.currentFrame) or baseValue.Z
+					finalValue = Vector3.new(x, y, z)
+				elseif valueType == "Color3" then
+					local r = self:getValueAtFrame(propTrack.Components.R, self.currentFrame) or baseValue.R
+					local g = self:getValueAtFrame(propTrack.Components.G, self.currentFrame) or baseValue.G
+					local b = self:getValueAtFrame(propTrack.Components.B, self.currentFrame) or baseValue.B
+					finalValue = Color3.new(r, g, b)
+				elseif valueType == "UDim2" then
+					local xs = self:getValueAtFrame(propTrack.Components.XScale, self.currentFrame) or baseValue.X.Scale
+					local xo = self:getValueAtFrame(propTrack.Components.XOffset, self.currentFrame) or baseValue.X.Offset
+					local ys = self:getValueAtFrame(propTrack.Components.YScale, self.currentFrame) or baseValue.Y.Scale
+					local yo = self:getValueAtFrame(propTrack.Components.YOffset, self.currentFrame) or baseValue.Y.Offset
+					finalValue = UDim2.new(xs, xo, ys, yo)
 				end
 			else
-				-- Handle simple properties
+				-- Handle simple properties (non-expanded tracks)
 				finalValue = self:getValueAtFrame(propTrack, self.currentFrame)
 			end
 
 			if finalValue ~= nil then
 				-- Only set property if not playing, or if it has keyframes
 				-- This prevents overriding physics/other scripts when not explicitly animated
-				if not isPlaying or (propTrack.keyframes and next(propTrack.keyframes)) then
-					object[propName] = finalValue
+				if not isPlaying or trackHasKeyframes(propTrack) then
+					local targetObject = object
+					if targetObject:IsA("Model") and propName == "CFrame" then
+						targetObject = targetObject.PrimaryPart
+					end
+
+					if targetObject then
+						targetObject[propName] = finalValue
+					end
 				end
 			end
 		end

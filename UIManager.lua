@@ -316,6 +316,18 @@ function UIManager.create(parentWidget, Config)
 	separator4.LayoutOrder = 23
 	separator4.Parent = buttonContainer
 
+	local viewToggleButton = Instance.new("TextButton")
+	viewToggleButton.Name = "ViewToggleButton"
+	viewToggleButton.Size = UDim2.new(0, 120, 0, 28)
+	viewToggleButton.Text = "Graph Editor"
+	viewToggleButton.BackgroundColor3 = Config.Colors.ButtonSecondary
+	viewToggleButton.TextColor3 = Config.Colors.TextPrimary
+	viewToggleButton.Font = Enum.Font.SourceSansBold
+	viewToggleButton.TextSize = 14
+	viewToggleButton.LayoutOrder = 25
+	viewToggleButton.Parent = buttonContainer
+	addCorner(viewToggleButton)
+
 	local selectedObjectLabel = Instance.new("TextLabel")
 	selectedObjectLabel.Name = "SelectedObjectLabel"
 	selectedObjectLabel.AnchorPoint = Vector2.new(1, 0.5)
@@ -601,6 +613,23 @@ function UIManager.create(parentWidget, Config)
 	local keyframeTracksLayout = Instance.new("UIListLayout")
 	keyframeTracksLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	keyframeTracksLayout.Parent = keyframeTracksContainer
+
+	-- GRAPH EDITOR PANEL --
+	local graphEditorFrame = Instance.new("Frame")
+	graphEditorFrame.Name = "GraphEditorFrame"
+	graphEditorFrame.Size = UDim2.new(1, 0, 1, -24)
+	graphEditorFrame.Position = UDim2.new(0, 0, 0, 24)
+	graphEditorFrame.BackgroundColor3 = Config.Colors.ContentBackground
+	graphEditorFrame.BorderSizePixel = 0
+	graphEditorFrame.Visible = false -- Sembunyikan secara default
+	graphEditorFrame.ClipsDescendants = true
+	graphEditorFrame.Parent = keyframeAreaFrame
+
+	local graphCanvas = Instance.new("Frame")
+	graphCanvas.Name = "GraphCanvas"
+	graphCanvas.Size = UDim2.new(1, 0, 1, 0)
+	graphCanvas.BackgroundTransparency = 1
+	graphCanvas.Parent = graphEditorFrame
 
 	for i = 0, 200 do -- Perpanjang ruler awal
 		local position = i * Config.PIXELS_PER_FRAME_INTERVAL
@@ -1033,6 +1062,7 @@ function UIManager.create(parentWidget, Config)
 		stopButton = stopButton,
 		speedDropdown = speedDropdown,
 		loopButton = loopButton,
+	viewToggleButton = viewToggleButton,
 		zoomInButton = zoomInButton,
 		zoomOutButton = zoomOutButton,
 		addObjectButton = addObjectButton,
@@ -1056,6 +1086,10 @@ function UIManager.create(parentWidget, Config)
 			frame = playbackRangeFrame,
 			startHandle = startHandle,
 			endHandle = endHandle,
+		},
+		graphEditor = {
+			frame = graphEditorFrame,
+			canvas = graphCanvas,
 		},
 		saveDialog = {
 			gui = saveDialogGui,

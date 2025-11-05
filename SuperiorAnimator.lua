@@ -27,6 +27,7 @@ local updateCameraPreview
 local onCameraChanged
 local connectCameraListener
 local disconnectCameraListener
+local updateGraphEditor
 
 -- Fungsi ini HANYA membuat dan mengembalikan elemen-elemen UI.
 local UIManager = require(script.src.UIManager)
@@ -87,6 +88,8 @@ local state = {
 	isCameraLocked = false,
 	cameraChangedConnection = nil,
 	isPropertiesCollapsed = false,
+	-- View State
+	currentView = "DopeSheet", -- "DopeSheet" or "GraphEditor"
 }
 
 -- === MODUL LOGIKA ===
@@ -99,6 +102,128 @@ local ActionHistory = ActionHistoryManager.new(ui, Config)
 
 
 -- === FUNCTION DEFINITIONS ===
+
+local function drawCurve(points, color)
+	for i = 1, #points - 1 do
+		local p1 = points[i]
+		local p2 = points[i+1]
+
+		local segment = Instance.new("Frame")
+		segment.BackgroundColor3 = color
+		segment.BorderSizePixel = 0
+		segment.AnchorPoint = Vector2.new(0, 0.5)
+
+		local canvasSize = ui.graphEditor.canvas.AbsoluteSize
+		local p1Pixel = Vector2.new(p1.X * canvasSize.X, p1.Y * canvasSize.Y)
+		local p2Pixel = Vector2.new(p2.X * canvasSize.X, p2.Y * canvasSize.Y)
+
+		local distance = (p2Pixel - p1Pixel).Magnitude
+		local angle = math.atan2(p2Pixel.Y - p1Pixel.Y, p2Pixel.X - p1Pixel.X)
+
+		segment.Size = UDim2.new(0, distance, 0, 2)
+		segment.Position = UDim2.new(0, p1Pixel.X, 0, p1Pixel.Y)
+		segment.Rotation = math.deg(angle)
+		segment.Parent = ui.graphEditor.canvas
+	end
+end
+
+function updateGraphEditor()
+	-- Hapus kurva lama
+	for _, child in ipairs(ui.graphEditor.canvas:GetChildren()) do
+		child:Destroy()
+	end
+
+	if state.currentView ~= "GraphEditor" then return end
+	if not state.currentlySelectedTrack.object or not state.currentlySelectedTrack.property then return end
+
+	local object = state.currentlySelectedTrack.object
+	local uid = object:GetAttribute("SuperiorAnimator_UID")
+	local mainPropName = state.currentlySelectedTrack.property
+
+	if not uid or not state.animationData[uid] or not state.animationData[uid].Properties[mainPropName] then
+		return
+	end
+
+	local propData = state.animationData[uid].Properties[mainPropName]
+	local expandableTypes = {Vector3 = {"X", "Y", "Z"}, Color3 = {"R", "G", "B"}, UDim2 = {"XScale", "XOffset", "YScale", "YOffset"}}
+
+	local function processAndDraw(propName, color)
+		local mainProp, comp = propName:match("([^.]+)%.([^.]+)")
+		if not mainProp then -- Handle number properties
+			mainProp = propName
+			comp = nil
+		end
+
+		local keyframes = {}
+		local mainPropData = state.animationData[uid].Properties[mainProp]
+		if not mainPropData then return end
+
+		if comp and mainPropData.Components and mainPropData.Components[comp] then
+			keyframes = mainPropData.Components[comp].keyframes
+		elseif not comp and mainPropData.ValueType == "number" then
+			keyframes = mainPropData.keyframes
+		end
+
+		local sortedFrames = {}
+		for frame, _ in pairs(keyframes) do
+			table.insert(sortedFrames, frame)
+		end
+		table.sort(sortedFrames)
+
+		if #sortedFrames < 2 then return end
+
+		local points = {}
+		-- Find min/max values for normalization
+		local minValue, maxValue = keyframes[sortedFrames[1]].Value, keyframes[sortedFrames[1]].Value
+		for _, frame in ipairs(sortedFrames) do
+			local val = keyframes[frame].Value
+			minValue = math.min(minValue, val)
+			maxValue = math.max(maxValue, val)
+		end
+		if minValue == maxValue then maxValue = minValue + 1 end -- Prevent division by zero
+
+		local totalFrames = tonumber(ui.timelineLengthInput.Text) or 240
+		if totalFrames <= 0 then totalFrames = 1 end
+
+		for i = 1, #sortedFrames - 1 do
+			local startFrame = sortedFrames[i]
+			local endFrame = sortedFrames[i+1]
+			local startVal = keyframes[startFrame].Value
+			local endVal = keyframes[endFrame].Value
+			local easing = EasingFunctions[keyframes[startFrame].Easing or "Linear"]
+			if not easing then
+				warn("Easing function not found for: " .. (keyframes[startFrame].Easing or "Linear"))
+				easing = EasingFunctions.Linear
+			end
+
+			local STEPS = 20 -- Number of segments to draw between keyframes
+			for step = 0, STEPS do
+				local alpha = step / STEPS
+				local easedAlpha = easing(alpha)
+
+				local currentFrame = startFrame + (endFrame - startFrame) * alpha
+				local currentValue = startVal + (endVal - startVal) * easedAlpha
+
+				-- Normalize to canvas space (0-1 for both axes)
+				local x = currentFrame / totalFrames
+				local y = 1 - ((currentValue - minValue) / (maxValue - minValue))
+
+				table.insert(points, Vector2.new(x, y))
+			end
+		end
+		drawCurve(points, color)
+	end
+
+	if expandableTypes[propData.ValueType] then
+		local components = expandableTypes[propData.ValueType]
+		local colors = {Color3.fromRGB(255, 80, 80), Color3.fromRGB(80, 255, 80), Color3.fromRGB(80, 80, 255), Color3.fromRGB(200,200,80)}
+		for i, compName in ipairs(components) do
+			processAndDraw(mainPropName .. "." .. compName, colors[i])
+		end
+	elseif propData.ValueType == "number" then
+		processAndDraw(mainPropName, Color3.fromRGB(240, 240, 240))
+	end
+end
 
 -- Fungsi refactor baru untuk menangani logika expand/collapse
 local function toggleTrackExpansion(object, propName, expandButton)
@@ -546,6 +671,7 @@ function updateKeyframeValue(newValue, componentType, axis)
 	}
 	ActionHistory:register(action)
 	action.redo()
+	updateGraphEditor()
 end
 
 function deleteTrack(object, propName)
@@ -605,6 +731,7 @@ function deleteTrack(object, propName)
 				state.currentlySelectedTrack = { object = nil, property = nil, label = nil }
 			end
 			updateCanvasSize()
+			updateGraphEditor()
 		end,
 		undo = function()
 			if isFullObjectDeletion then
@@ -631,6 +758,7 @@ function deleteTrack(object, propName)
 				end
 			end
 			updateCanvasSize()
+			updateGraphEditor()
 		end
 	}
 
@@ -652,6 +780,7 @@ function clearTimeline()
 	updateCanvasSize()
 	timeline:stop()
 	updateScrubberFromTimeline()
+	updateGraphEditor()
 end
 
 function createTrackForObject(object, isSubTrack, propName, uid)
@@ -1324,7 +1453,7 @@ local function updateCameraPreview()
 	local cameraUID = "SuperiorAnimator_Camera"
 	if not state.animationData[cameraUID] then return end
 
-	local animatedCFrame = timeline:getValueAtFrame("SuperiorAnimator_Camera", "CFrame", timeline.currentFrame)
+	local animatedCFrame = timeline:getValueAtFrame(cameraUID, "CFrame", timeline.currentFrame)
 	if animatedCFrame then
 		workspace.CurrentCamera.CFrame = animatedCFrame
 	end
@@ -1436,6 +1565,7 @@ local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
 				createKeyframeMarkerUI(selectedObject, mainPropName, currentFrame, nil)
 			end
 			updateTimelineRuler()
+			updateGraphEditor()
 		end,
 		undo = function()
 			local objectUID = selectedObject:GetAttribute("SuperiorAnimator_UID")
@@ -1463,6 +1593,7 @@ local function addKeyframeAction(selectedObject, fullPropName, currentFrame)
 				removeKeyframe(objectUID, mainPropName, currentFrame, nil)
 			end
 			updateTimelineRuler()
+			updateGraphEditor()
 		end
 	}
 	ActionHistory:register(action)
@@ -2191,6 +2322,7 @@ inputService.InputEnded:Connect(function(input)
 			}
 			ActionHistory:register(action)
 			action.redo()
+			updateGraphEditor()
 
 			state.draggingKeyframeInfo = nil
 		end
@@ -2520,6 +2652,7 @@ local function deleteSelectedKeyframes()
 	}
 	ActionHistory:register(action)
 	action.redo()
+	updateGraphEditor()
 end
 
 ui.deleteKeyframeButton.MouseButton1Click:Connect(deleteSelectedKeyframes)
@@ -2596,6 +2729,7 @@ inputService.InputBegan:Connect(function(input, gameProcessedEvent)
 		addKeyframeData(object, mainPropName, currentFrame, state.keyframeClipboard.Value, state.keyframeClipboard.Easing, componentName)
 		createKeyframeMarkerUI(object, mainPropName, currentFrame, componentName)
 		updateTimelineRuler()
+		updateGraphEditor()
 	end
 end)
 
@@ -2647,8 +2781,10 @@ local function bindHotkeys()
 				end
 			elseif actionName == "Animator_Undo" and isCtrlDown then
 				ActionHistory:undo()
+				updateGraphEditor()
 			elseif actionName == "Animator_Redo" and isCtrlDown then
 				ActionHistory:redo()
+				updateGraphEditor()
 			end
 		end
 		return Enum.ContextActionResult.Pass
@@ -2669,8 +2805,14 @@ local function unbindHotkeys()
 end
 
 -- === KONEKSI UNDO/REDO ===
-ui.undoButton.MouseButton1Click:Connect(function() ActionHistory:undo() end)
-ui.redoButton.MouseButton1Click:Connect(function() ActionHistory:redo() end)
+ui.undoButton.MouseButton1Click:Connect(function()
+	ActionHistory:undo()
+	updateGraphEditor()
+end)
+ui.redoButton.MouseButton1Click:Connect(function()
+	ActionHistory:redo()
+	updateGraphEditor()
+end)
 
 -- Panggil sekali di awal untuk mengatur keadaan awal
 ActionHistory:updateButtonStates()
@@ -2688,6 +2830,21 @@ end)
 
 plugin.Unloading:Connect(function()
 	unbindHotkeys()
+end)
+
+ui.viewToggleButton.MouseButton1Click:Connect(function()
+	if state.currentView == "DopeSheet" then
+		state.currentView = "GraphEditor"
+		ui.viewToggleButton.Text = "Dope Sheet"
+		ui.keyframeTracksContainer.Visible = false
+		ui.graphEditor.frame.Visible = true
+		updateGraphEditor()
+	else
+		state.currentView = "DopeSheet"
+		ui.viewToggleButton.Text = "Graph Editor"
+		ui.keyframeTracksContainer.Visible = true
+		ui.graphEditor.frame.Visible = false
+	end
 end)
 
 ui.collapseButton.MouseButton1Click:Connect(function()

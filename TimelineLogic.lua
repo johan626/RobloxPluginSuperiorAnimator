@@ -38,7 +38,13 @@ function TimelineLogic:stop()
 end
 
 -- Function to get the value of a property at a specific frame
-function TimelineLogic:getValueAtFrame(propertyTrack, frame)
+function TimelineLogic:getValueAtFrame(uid, propName, frame)
+	if not self.animationData[uid] or not self.animationData[uid].Properties[propName] then
+		return nil
+	end
+
+	local propertyTrack = self.animationData[uid].Properties[propName]
+
 	if not propertyTrack or not propertyTrack.keyframes then
 		return nil
 	end
@@ -130,25 +136,25 @@ function TimelineLogic:setCurrentFrame(frame, isPlaying)
 				local valueType = typeof(baseValue)
 
 				if valueType == "Vector3" then
-					local x = self:getValueAtFrame(propTrack.Components.X, self.currentFrame) or baseValue.X
-					local y = self:getValueAtFrame(propTrack.Components.Y, self.currentFrame) or baseValue.Y
-					local z = self:getValueAtFrame(propTrack.Components.Z, self.currentFrame) or baseValue.Z
+					local x = self:getValueAtFrame(uid, propName .. ".X", self.currentFrame) or baseValue.X
+					local y = self:getValueAtFrame(uid, propName .. ".Y", self.currentFrame) or baseValue.Y
+					local z = self:getValueAtFrame(uid, propName .. ".Z", self.currentFrame) or baseValue.Z
 					finalValue = Vector3.new(x, y, z)
 				elseif valueType == "Color3" then
-					local r = self:getValueAtFrame(propTrack.Components.R, self.currentFrame) or baseValue.R
-					local g = self:getValueAtFrame(propTrack.Components.G, self.currentFrame) or baseValue.G
-					local b = self:getValueAtFrame(propTrack.Components.B, self.currentFrame) or baseValue.B
+					local r = self:getValueAtFrame(uid, propName .. ".R", self.currentFrame) or baseValue.R
+					local g = self:getValueAtFrame(uid, propName .. ".G", self.currentFrame) or baseValue.G
+					local b = self:getValueAtFrame(uid, propName .. ".B", self.currentFrame) or baseValue.B
 					finalValue = Color3.new(r, g, b)
 				elseif valueType == "UDim2" then
-					local xs = self:getValueAtFrame(propTrack.Components.XScale, self.currentFrame) or baseValue.X.Scale
-					local xo = self:getValueAtFrame(propTrack.Components.XOffset, self.currentFrame) or baseValue.X.Offset
-					local ys = self:getValueAtFrame(propTrack.Components.YScale, self.currentFrame) or baseValue.Y.Scale
-					local yo = self:getValueAtFrame(propTrack.Components.YOffset, self.currentFrame) or baseValue.Y.Offset
+					local xs = self:getValueAtFrame(uid, propName .. ".XScale", self.currentFrame) or baseValue.X.Scale
+					local xo = self:getValueAtFrame(uid, propName .. ".XOffset", self.currentFrame) or baseValue.X.Offset
+					local ys = self:getValueAtFrame(uid, propName .. ".YScale", self.currentFrame) or baseValue.Y.Scale
+					local yo = self:getValueAtFrame(uid, propName .. ".YOffset", self.currentFrame) or baseValue.Y.Offset
 					finalValue = UDim2.new(xs, xo, ys, yo)
 				end
 			else
 				-- Handle simple properties (non-expanded tracks)
-				finalValue = self:getValueAtFrame(propTrack, self.currentFrame)
+				finalValue = self:getValueAtFrame(uid, propName, self.currentFrame)
 			end
 
 			if finalValue ~= nil then
